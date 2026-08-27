@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MzansiMarket.Api/MzansiMarket.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MzansiMarket.Api.Tests/MzansiMarket.Api.Tests.csproj" />
+  </Folder>
+</Solution>

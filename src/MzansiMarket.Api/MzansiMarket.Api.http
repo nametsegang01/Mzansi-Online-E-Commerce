@@ -1,0 +1,11 @@
+@MzansiMarket.Api_HostAddress = http://localhost:5248
+
+GET {{MzansiMarket.Api_HostAddress}}/
+Accept: application/json
+
+###
+
+GET {{MzansiMarket.Api_HostAddress}}/health/database
+Accept: application/json
+
+###
