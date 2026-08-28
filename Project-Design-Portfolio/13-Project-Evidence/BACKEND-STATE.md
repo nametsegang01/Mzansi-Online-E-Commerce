@@ -136,7 +136,7 @@
 
 - Service: `mzansi-market-api` (`srv-da8lb75g1s2s739oncb0`), Docker, Frankfurt, Free.
 - Public URL: `https://mzansi-market-api.onrender.com`.
-- Source release: commit `3e7584d` on `main`.
+- Source release: commit `efe85d2` on `main` (includes the clean Npgsql/GSS container runtime dependency).
 - Environment: private `DATABASE_URL`, Production environment, controlled startup migrations, deployed-frontend-only CORS, authentication rate limiting, and a generated sandbox webhook secret.
 - Database: DATA-002 through DATA-004 applied successfully at startup; Render logs report the database migrations are current.
 - Platform health check: `/health/database`.
