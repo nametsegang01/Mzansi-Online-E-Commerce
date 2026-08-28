@@ -1,15 +1,15 @@
-import { ShoppingBag } from 'lucide-react'
-
 export function BrandMark() {
   return (
     <a className="brand-mark" href="#top" aria-label="Mzansi Market home">
-      <span className="brand-mark__bag" aria-hidden="true">
-        <ShoppingBag size={24} strokeWidth={1.7} />
-        <strong>M</strong>
-      </span>
+      <img
+        className="brand-mark__logo"
+        src="/mzansi-market-logo-mark.png"
+        alt=""
+        aria-hidden="true"
+      />
       <span className="brand-mark__wordmark">
-        <strong>Mzansi</strong>
-        <small>MARKET</small>
+        <span><strong>Mzansi Market</strong> <em>Online</em></span>
+        <small aria-hidden="true"><i /> <b /> <i /></small>
       </span>
     </a>
   )

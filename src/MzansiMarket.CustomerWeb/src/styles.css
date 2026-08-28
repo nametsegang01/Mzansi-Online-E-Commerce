@@ -160,33 +160,16 @@ input:focus-visible {
 .brand-mark {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   color: var(--pine-950);
   text-decoration: none;
 }
 
-.brand-mark__bag {
-  position: relative;
-  width: 2.55rem;
-  height: 2.55rem;
-  display: grid;
-  place-items: center;
-  border-radius: 0.8rem 0.8rem 1rem 1rem;
-  color: var(--paper);
-  background: linear-gradient(145deg, var(--pine-700), var(--pine-950));
-  box-shadow: inset 0 -2px 0 rgb(197 150 74 / 80%);
-}
-
-.brand-mark__bag svg {
-  position: absolute;
-  top: -0.3rem;
-  opacity: 0.75;
-}
-
-.brand-mark__bag strong {
-  position: relative;
-  top: 0.18rem;
-  font: 600 1.25rem/1 Georgia, serif;
+.brand-mark__logo {
+  width: 2.75rem;
+  height: 3rem;
+  flex: none;
+  object-fit: contain;
 }
 
 .brand-mark__wordmark {
@@ -194,16 +177,40 @@ input:focus-visible {
   line-height: 1;
 }
 
+.brand-mark__wordmark > span {
+  white-space: nowrap;
+  font-size: 1.12rem;
+  letter-spacing: -0.04em;
+}
+
 .brand-mark__wordmark strong {
-  font: 600 1.45rem/1 Georgia, "Times New Roman", serif;
-  letter-spacing: -0.035em;
+  font-weight: 750;
+}
+
+.brand-mark__wordmark em {
+  font-style: normal;
+  font-weight: 300;
 }
 
 .brand-mark__wordmark small {
-  margin-top: 0.3rem;
-  font-size: 0.56rem;
-  font-weight: 700;
-  letter-spacing: 0.35em;
+  margin-top: 0.42rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+}
+
+.brand-mark__wordmark small i {
+  width: 2.25rem;
+  height: 1px;
+  background: var(--gold-500);
+}
+
+.brand-mark__wordmark small b {
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .primary-nav {
@@ -1140,6 +1147,12 @@ input:focus-visible {
   color: var(--paper);
 }
 
+.site-footer .brand-mark__logo {
+  padding: 0.28rem;
+  border-radius: 0.7rem;
+  background: var(--paper);
+}
+
 .site-footer p {
   margin: 0;
   color: rgb(255 255 255 / 65%);
@@ -1195,8 +1208,8 @@ input:focus-visible {
     justify-self: center;
   }
 
-  .brand-mark__wordmark strong {
-    font-size: 1.25rem;
+  .brand-mark__wordmark > span {
+    font-size: 1rem;
   }
 
   .primary-nav {
@@ -1312,6 +1325,11 @@ input:focus-visible {
 
   .header-main .brand-mark__wordmark small {
     display: none;
+  }
+
+  .header-main .brand-mark__logo {
+    width: 2.2rem;
+    height: 2.45rem;
   }
 
   .search-band {
