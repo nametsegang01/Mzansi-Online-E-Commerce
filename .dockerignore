@@ -1,0 +1,17 @@
+.git
+.github
+.vs
+.idea
+.env
+.env.*
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/coverage
+Project-Design-Portfolio
+artifacts
+tmp
+*.user
+*.suo
+*.log

@@ -119,6 +119,15 @@ app.MapCheckoutEndpoints();
 app.MapPaymentEndpoints();
 app.MapFulfilmentEndpoints();
 
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var migrationDatabase = scope.ServiceProvider.GetRequiredService<MarketplaceDbContext>();
+    app.Logger.LogInformation("Applying pending database migrations before accepting traffic.");
+    await migrationDatabase.Database.MigrateAsync();
+    app.Logger.LogInformation("Database migrations are current.");
+}
+
 app.Run();
 
 public partial class Program;

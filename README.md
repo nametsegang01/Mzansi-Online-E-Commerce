@@ -55,6 +55,8 @@ dotnet ef database update --project src/MzansiMarket.Api --startup-project src/M
 
 Supply the database connection through `ConnectionStrings__DefaultConnection` or `DATABASE_URL`. Render-style `postgresql://` URLs are supported. Keep credentials outside source control.
 
+The root `Dockerfile` publishes the API into the official .NET 10 ASP.NET runtime image and binds to Render's injected `PORT`. Set `Database__ApplyMigrations=true` only on the controlled API service to apply pending EF migrations before it accepts traffic; a migration failure stops startup.
+
 ## Design evidence
 
 - [ERD](Project-Design-Portfolio/07-Database-Design/ERD.md)
