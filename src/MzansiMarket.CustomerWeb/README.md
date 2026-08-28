@@ -1,6 +1,6 @@
 # Mzansi Market Customer Web
 
-Responsive React and TypeScript storefront prototype for Mzansi Market customers.
+Responsive React and TypeScript marketplace application for Mzansi Market customers and sellers.
 
 ## Run locally
 
@@ -19,15 +19,14 @@ npm audit --audit-level=high
 
 ## Current scope
 
-- Responsive storefront shell and mobile tab bar
-- Product search and category filtering
-- Local seller and province context
-- Reversible favourites
-- Add-to-cart count and screen-reader announcements
-- Newsletter interaction
-- Reduced-motion, reduced-transparency, increased-contrast, keyboard, and forced-color behavior
+- Live public catalogue search, filters, stock, and server pricing
+- Customer and seller registration, login, token refresh, and role-aware navigation
+- Customer address book, cart, checkout, and sandbox payment initiation
+- Seller application status and approved-seller fulfilment workflow
+- Responsive sheets, mobile navigation, screen-reader announcements, and focus management
+- Loading, empty, error, retry, reduced-motion, reduced-transparency, contrast, and forced-color behavior
 
-Catalogue content is deliberately mock data in `src/data/catalog.ts`. The next work unit should replace it through a typed API client once public catalogue endpoints exist in the ASP.NET backend.
+The app uses `https://mzansi-market-api.onrender.com` by default. Set `VITE_API_URL` to override it locally. Seller catalogue administration, reports, returns, and refunds remain dependent on backend work units BE-007 through BE-009.
 
 ## Visual direction
 

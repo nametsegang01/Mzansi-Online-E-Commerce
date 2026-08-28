@@ -1,288 +1,87 @@
-import { useMemo, useState } from 'react'
-import {
-  ArrowRight,
-  BadgeCheck,
-  Heart,
-  HelpCircle,
-  Home,
-  MapPin,
-  Menu,
-  PackageCheck,
-  Search,
-  ShieldCheck,
-  ShoppingBag,
-  SlidersHorizontal,
-  Sparkles,
-  Store,
-  UserRound,
-  X,
-} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
+import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, BarChart3, Box, Check, ChevronRight, ClipboardList, Heart, Home, LoaderCircle, LogOut, MapPin, Menu, Minus, PackageCheck, Plus, Search, Settings, ShieldCheck, ShoppingBag, Store, Trash2, Truck, UserRound, X } from 'lucide-react'
+import { api, ApiError } from './api/client'
+import type { Address, AddressInput, Cart, Category, Checkout, CurrentUser, FulfilmentOrder, Product } from './api/types'
 import { BrandMark } from './components/BrandMark'
 import { ProductCard } from './components/ProductCard'
-import { categories, products, type Product } from './data/catalog'
+
+type View = 'shop' | 'account' | 'seller'
+type AuthMode = 'login' | 'customer' | 'seller'
+const emptyCart: Cart = { cartId: null, items: [], itemCount: 0, subtotal: 0, currency: 'ZAR' }
+const currency = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' })
+const dateTime = new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })
+const provinces = ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape']
+function message(error: unknown) { return error instanceof ApiError ? error.message : error instanceof Error ? error.message : 'Something went wrong. Please try again.' }
 
 export function App() {
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('all')
-  const [cartCount, setCartCount] = useState(0)
-  const [favourites, setFavourites] = useState<Set<number>>(new Set())
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [announcement, setAnnouncement] = useState('')
-  const [joined, setJoined] = useState(false)
+  const [view, setView] = useState<View>('shop'), [authMode, setAuthMode] = useState<AuthMode | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false), [cartOpen, setCartOpen] = useState(false)
+  const [user, setUser] = useState<CurrentUser | null>(null), [authReady, setAuthReady] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([]), [products, setProducts] = useState<Product[]>([]), [totalProducts, setTotalProducts] = useState(0)
+  const [query, setQuery] = useState(''), [category, setCategory] = useState(''), [sort, setSort] = useState('newest'), [inStock, setInStock] = useState(false)
+  const [catalogueBusy, setCatalogueBusy] = useState(true), [catalogueError, setCatalogueError] = useState('')
+  const [cart, setCart] = useState<Cart>(emptyCart), [cartBusy, setCartBusy] = useState('')
+  const [favourites, setFavourites] = useState<Set<string>>(new Set()), [announcement, setAnnouncement] = useState('')
 
-  const visibleProducts = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    return products.filter((product) => {
-      const matchesCategory = category === 'all' || product.category === category
-      const matchesSearch =
-        normalizedQuery.length === 0 ||
-        [product.name, product.seller, product.province].some((value) =>
-          value.toLowerCase().includes(normalizedQuery),
-        )
-      return matchesCategory && matchesSearch
-    })
-  }, [category, query])
+  const loadCart = useCallback(async () => { if (!api.hasSession()) return setCart(emptyCart); try { setCart(await api.cart()) } catch (e) { if (e instanceof ApiError && e.status === 403) setCart(emptyCart) } }, [])
+  const loadUser = useCallback(async () => { if (!api.hasSession()) { setAuthReady(true); return } try { setUser(await api.me()); await loadCart() } catch { api.clearSession() } finally { setAuthReady(true) } }, [loadCart])
+  useEffect(() => { void loadUser(); api.categories().then(setCategories).catch(() => setCategories([])) }, [loadUser])
+  const loadProducts = useCallback(async () => { setCatalogueBusy(true); setCatalogueError(''); const params = new URLSearchParams({ pageSize: '48', sort }); if (query.trim()) params.set('search', query.trim()); if (category) params.set('category', category); if (inStock) params.set('inStock', 'true'); try { const result = await api.products(params); setProducts(result.items); setTotalProducts(result.totalCount) } catch (e) { setCatalogueError(message(e)) } finally { setCatalogueBusy(false) } }, [category, inStock, query, sort])
+  useEffect(() => { const id = window.setTimeout(() => void loadProducts(), 250); return () => window.clearTimeout(id) }, [loadProducts])
+  function navigate(next: View) { if (next !== 'shop' && !user) return setAuthMode('login'); setView(next); setMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  async function signedIn() { const current = await api.me(); setUser(current); setAuthMode(null); await loadCart(); setAnnouncement(`Welcome back, ${current.displayName}.`) }
+  async function addToCart(product: Product) { if (!user) { setAuthMode('login'); return setAnnouncement('Sign in to add products to your cart.') } setCartBusy(product.id); try { setCart(await api.addCartItem(product.id)); setAnnouncement(`${product.name} added to your cart.`) } catch (e) { setAnnouncement(message(e)) } finally { setCartBusy('') } }
+  function toggleFavourite(product: Product) { setFavourites((current) => { const next = new Set(current); next.has(product.id) ? next.delete(product.id) : next.add(product.id); return next }) }
+  async function signOut() { await api.logout(); setUser(null); setCart(emptyCart); setView('shop'); setAnnouncement('You have signed out.') }
+  const seller = user?.roles.includes('Seller') ? user.seller : null
 
-  function toggleFavourite(product: Product) {
-    setFavourites((current) => {
-      const next = new Set(current)
-      if (next.has(product.id)) {
-        next.delete(product.id)
-        setAnnouncement(`${product.name} removed from favourites.`)
-      } else {
-        next.add(product.id)
-        setAnnouncement(`${product.name} added to favourites.`)
-      }
-      return next
-    })
-  }
-
-  function addToCart(product: Product) {
-    setCartCount((count) => count + 1)
-    setAnnouncement(`${product.name} added to your cart.`)
-  }
-
-  return (
-    <div id="top" className="app-shell">
-      <a className="skip-link" href="#main-content">Skip to products</a>
-      <p className="sr-only" aria-live="polite">{announcement}</p>
-
-      <header className="site-header">
-        <div className="utility-bar">
-          <p>Free delivery over R750 · Easy 14-day returns</p>
-          <nav aria-label="Utility navigation">
-            <a href="#seller-story"><Store size={14} /> Sell on Mzansi</a>
-            <a href="#help"><HelpCircle size={14} /> Help</a>
-          </nav>
-        </div>
-
-        <div className="header-main glass-surface">
-          <button
-            className="icon-button mobile-only"
-            type="button"
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? <X /> : <Menu />}
-          </button>
-          <BrandMark />
-
-          <nav className={`primary-nav ${menuOpen ? 'primary-nav--open' : ''}`} aria-label="Primary navigation">
-            <a href="#featured" onClick={() => setMenuOpen(false)}>New in</a>
-            <a href="#categories" onClick={() => setMenuOpen(false)}>Categories</a>
-            <a href="#seller-story" onClick={() => setMenuOpen(false)}>Local makers</a>
-            <a href="#featured" onClick={() => setMenuOpen(false)}>Deals</a>
-          </nav>
-
-          <div className="header-actions">
-            <button className="location-button desktop-only" type="button">
-              <MapPin size={17} />
-              <span><small>Deliver to</small> Gauteng</span>
-            </button>
-            <button className="icon-button desktop-only" type="button" aria-label="Your account">
-              <UserRound />
-            </button>
-            <button className="cart-button" type="button" aria-label={`Shopping cart with ${cartCount} items`}>
-              <ShoppingBag />
-              <span className="cart-button__count">{cartCount}</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main id="main-content">
-        <section className="search-band" aria-label="Product search">
-          <form className="search-box" role="search" onSubmit={(event) => event.preventDefault()}>
-            <Search aria-hidden="true" />
-            <label className="sr-only" htmlFor="catalog-search">Search products, categories, or sellers</label>
-            <input
-              id="catalog-search"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search products, categories or sellers"
-            />
-            <button className="filter-button" type="button" aria-label="Open filters">
-              <SlidersHorizontal /> <span className="desktop-only">Filters</span>
-            </button>
-          </form>
-        </section>
-
-        <section className="hero-section section-wrap" aria-labelledby="hero-heading">
-          <div className="hero-copy">
-            <p className="eyebrow"><Sparkles size={15} /> Made close to home</p>
-            <h1 id="hero-heading">Proudly local.<br /><em>Beautifully made.</em></h1>
-            <p className="hero-lede">
-              Discover considered pieces from independent South African makers, delivered with care.
-            </p>
-            <div className="hero-actions">
-              <a className="primary-button" href="#featured">Shop local <ArrowRight /></a>
-              <a className="text-link" href="#seller-story">Meet our makers</a>
-            </div>
-            <div className="hero-proof" aria-label="Marketplace highlights">
-              <span><strong>9</strong> provinces</span>
-              <span><strong>240+</strong> local sellers</span>
-              <span><strong>4.8</strong> average rating</span>
-            </div>
-          </div>
-
-          <div className="hero-gallery" aria-label="Featured local craft collection">
-            <div className="hero-orbit hero-orbit--one" aria-hidden="true" />
-            <div className="hero-orbit hero-orbit--two" aria-hidden="true" />
-            <div className="hero-product hero-product--basket">
-              <span aria-hidden="true">M</span>
-              <p>Ubuntu weave</p>
-            </div>
-            <div className="hero-product hero-product--mug"><span aria-hidden="true">◡</span></div>
-            <div className="hero-product hero-product--bottle"><span>RENEW</span></div>
-            <div className="hero-product hero-product--plant" aria-hidden="true"><i /><i /><i /><i /><b /></div>
-            <div className="maker-note glass-surface">
-              <BadgeCheck size={18} />
-              <span><strong>Seller verified</strong>Handmade in Durban</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="trust-strip section-wrap" aria-label="Shopping benefits">
-          <span><ShieldCheck /> Secure checkout</span>
-          <span><PackageCheck /> Tracked delivery</span>
-          <span><Heart /> Support local</span>
-          <span><BadgeCheck /> Verified sellers</span>
-        </section>
-
-        <section id="categories" className="category-section section-wrap" aria-labelledby="category-heading">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Find your next favourite</p>
-              <h2 id="category-heading">Shop by category</h2>
-            </div>
-            <a className="text-link desktop-only" href="#featured">Browse everything <ArrowRight /></a>
-          </div>
-          <div className="category-scroller" role="group" aria-label="Filter products by category">
-            {categories.map((item, index) => (
-              <button
-                key={item.id}
-                className={`category-pill category-pill--${index + 1}`}
-                type="button"
-                aria-pressed={category === item.id}
-                onClick={() => setCategory(item.id)}
-              >
-                <span aria-hidden="true">{['✦', '⌂', '◌', '✧', '♨', '◇'][index]}</span>
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section id="featured" className="products-section section-wrap" aria-labelledby="featured-heading">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Curated for you</p>
-              <h2 id="featured-heading">Made with meaning</h2>
-            </div>
-            <p className="result-count" aria-live="polite">{visibleProducts.length} products</p>
-          </div>
-
-          {visibleProducts.length > 0 ? (
-            <div className="product-grid">
-              {visibleProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  favourite={favourites.has(product.id)}
-                  onToggleFavourite={toggleFavourite}
-                  onAddToCart={addToCart}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <Search />
-              <h3>No local finds yet</h3>
-              <p>Try another product, seller, or province.</p>
-              <button type="button" className="secondary-button" onClick={() => { setQuery(''); setCategory('all') }}>
-                Clear search
-              </button>
-            </div>
-          )}
-        </section>
-
-        <section id="seller-story" className="maker-section section-wrap" aria-labelledby="maker-heading">
-          <div className="maker-portrait" aria-hidden="true">
-            <span className="maker-portrait__sun" />
-            <span className="maker-portrait__table" />
-            <span className="maker-portrait__vase">✣</span>
-          </div>
-          <div className="maker-copy">
-            <p className="eyebrow">Maker story · Limpopo</p>
-            <h2 id="maker-heading">Every purchase carries a story forward.</h2>
-            <blockquote>
-              “Mzansi Market helps our small studio reach homes across South Africa while we keep making things the way our family taught us.”
-            </blockquote>
-            <p>— Lerato M., founder of Renew Botanics</p>
-            <a className="text-link" href="#featured">Shop seller stories <ArrowRight /></a>
-          </div>
-        </section>
-
-        <section className="newsletter section-wrap" aria-labelledby="newsletter-heading">
-          <div>
-            <p className="eyebrow">A little local inspiration</p>
-            <h2 id="newsletter-heading">New makers, thoughtful finds, no noise.</h2>
-          </div>
-          {joined ? (
-            <p className="newsletter__success"><BadgeCheck /> You’re on the list. Welcome to Mzansi Market.</p>
-          ) : (
-            <form onSubmit={(event) => { event.preventDefault(); setJoined(true) }}>
-              <label className="sr-only" htmlFor="newsletter-email">Email address</label>
-              <input id="newsletter-email" type="email" required placeholder="Email address" autoComplete="email" />
-              <button className="primary-button" type="submit">Join us <ArrowRight /></button>
-            </form>
-          )}
-        </section>
-      </main>
-
-      <footer id="help" className="site-footer">
-        <div className="section-wrap footer-grid">
-          <BrandMark />
-          <p>Quality finds from trusted local sellers, made for Mzansi.</p>
-          <nav aria-label="Footer navigation">
-            <a href="#featured">Shop</a>
-            <a href="#seller-story">Our sellers</a>
-            <a href="#help">Delivery & returns</a>
-            <a href="#help">Contact</a>
-          </nav>
-          <small>© 2026 Mzansi Market Online</small>
-        </div>
-      </footer>
-
-      <nav className="mobile-tab-bar glass-surface" aria-label="Mobile navigation">
-        <a href="#top" aria-current="page"><Home /><span>Home</span></a>
-        <a href="#categories"><Menu /><span>Categories</span></a>
-        <a href="#featured"><Heart /><span>Favourites</span></a>
-        <button type="button" aria-label={`Cart, ${cartCount} items`}><ShoppingBag /><span>Cart</span></button>
-        <button type="button"><UserRound /><span>Account</span></button>
-      </nav>
-    </div>
-  )
+  return <div id="top" className="app-shell">
+    <a className="skip-link" href="#main-content">Skip to main content</a><p className="sr-only" aria-live="polite">{announcement}</p>
+    <header className="site-header"><div className="utility-bar"><p>Free delivery over R750 · Easy 14-day returns</p><button type="button" onClick={() => user ? navigate('seller') : setAuthMode('seller')}><Store size={14}/> Sell on Mzansi</button></div>
+      <div className="header-main glass-surface"><button className="icon-button mobile-only" type="button" aria-label="Open navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X/> : <Menu/>}</button><BrandMark/>
+        <nav className={`primary-nav ${menuOpen ? 'primary-nav--open' : ''}`} aria-label="Primary navigation"><button className={view === 'shop' ? 'is-active' : ''} onClick={() => navigate('shop')}>Shop</button>{user && <button className={view === 'account' ? 'is-active' : ''} onClick={() => navigate('account')}>My account</button>}{seller && <button className={view === 'seller' ? 'is-active' : ''} onClick={() => navigate('seller')}>Seller studio</button>}</nav>
+        <div className="header-actions">{user ? <button className="account-chip desktop-only" type="button" onClick={() => navigate('account')}><span>{user.displayName[0]}</span><small>{user.displayName}</small></button> : <button className="secondary-button compact desktop-only" type="button" onClick={() => setAuthMode('login')}>Sign in</button>}<button className="cart-button" type="button" aria-label={`Shopping cart with ${cart.itemCount} items`} onClick={() => user ? setCartOpen(true) : setAuthMode('login')}><ShoppingBag/><span className="cart-button__count">{cart.itemCount}</span></button></div>
+      </div></header>
+    <main id="main-content">{view === 'shop' && <ShopView {...{ query, setQuery, category, setCategory, sort, setSort, inStock, setInStock, categories, products, totalProducts, catalogueBusy, catalogueError, loadProducts, favourites, toggleFavourite, addToCart, cartBusy }}/>} {view === 'account' && user && <AccountView user={user} onSignOut={signOut} announce={setAnnouncement}/>} {view === 'seller' && user && <SellerView user={user} announce={setAnnouncement}/>}</main>
+    <footer className="site-footer"><div className="section-wrap footer-grid"><BrandMark/><p>Quality finds from trusted local sellers, made for Mzansi.</p><small>© 2026 Mzansi Market Online · Sandbox commerce environment</small></div></footer>
+    <nav className="mobile-tab-bar glass-surface" aria-label="Mobile navigation"><button className={view === 'shop' ? 'is-active' : ''} onClick={() => navigate('shop')}><Home/><span>Shop</span></button><button onClick={() => user ? setCartOpen(true) : setAuthMode('login')}><ShoppingBag/><span>Cart</span></button>{seller && <button className={view === 'seller' ? 'is-active' : ''} onClick={() => navigate('seller')}><Store/><span>Sell</span></button>}<button className={view === 'account' ? 'is-active' : ''} onClick={() => navigate('account')}><UserRound/><span>Account</span></button></nav>
+    {authMode && <AuthSheet mode={authMode} setMode={setAuthMode} onClose={() => setAuthMode(null)} onSignedIn={signedIn}/>} {cartOpen && <CartSheet cart={cart} setCart={setCart} onClose={() => setCartOpen(false)} announce={setAnnouncement}/>} {!authReady && <div className="app-loading" role="status"><LoaderCircle className="spin"/> Restoring your session…</div>}
+  </div>
 }
+
+type ShopProps = { query:string; setQuery:(v:string)=>void; category:string; setCategory:(v:string)=>void; sort:string; setSort:(v:string)=>void; inStock:boolean; setInStock:(v:boolean)=>void; categories:Category[]; products:Product[]; totalProducts:number; catalogueBusy:boolean; catalogueError:string; loadProducts:()=>Promise<void>; favourites:Set<string>; toggleFavourite:(p:Product)=>void; addToCart:(p:Product)=>Promise<void>; cartBusy:string }
+function ShopView(p: ShopProps) { return <><section className="hero-section section-wrap" aria-labelledby="hero-heading"><div className="hero-copy"><p className="eyebrow"><BadgeCheck size={15}/> South African marketplace</p><h1 id="hero-heading">Proudly local.<br/><em>Beautifully made.</em></h1><p className="hero-lede">Discover products from independent South African sellers, with stock and pricing checked live.</p><a className="primary-button" href="#catalogue">Shop the collection <ArrowRight/></a></div><div className="hero-gallery" aria-hidden="true"><div className="hero-orbit hero-orbit--one"/><div className="hero-product hero-product--basket"><span>M</span></div><div className="hero-product hero-product--mug"><span>◡</span></div><div className="maker-note glass-surface"><ShieldCheck/><span><strong>Protected checkout</strong>Server-verified totals</span></div></div></section>
+    <section className="trust-strip section-wrap" aria-label="Shopping benefits"><span><ShieldCheck/> Secure account</span><span><PackageCheck/> Stock checked live</span><span><Heart/> Support local</span><span><BadgeCheck/> Seller-aware orders</span></section>
+    <section id="catalogue" className="catalogue-section section-wrap" aria-labelledby="catalogue-heading"><div className="section-heading"><div><p className="eyebrow">Explore the marketplace</p><h2 id="catalogue-heading">Local finds</h2></div><p className="result-count" aria-live="polite">{p.totalProducts} products</p></div><div className="catalogue-tools"><label className="search-box"><Search/><span className="sr-only">Search products or sellers</span><input type="search" value={p.query} onChange={e => p.setQuery(e.target.value)} placeholder="Search products or sellers"/></label><label>Sort<select value={p.sort} onChange={e => p.setSort(e.target.value)}><option value="newest">Newest</option><option value="name">Name</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option></select></label><label className="check-control"><input type="checkbox" checked={p.inStock} onChange={e => p.setInStock(e.target.checked)}/> In stock</label></div>
+      <div className="category-scroller" role="group" aria-label="Filter by category"><button className="category-pill" aria-pressed={!p.category} onClick={() => p.setCategory('')}>All</button>{p.categories.map(c => <button key={c.id} className="category-pill" aria-pressed={p.category === c.slug} onClick={() => p.setCategory(c.slug)}>{c.name}<small>{c.activeProductCount}</small></button>)}</div>
+      {p.catalogueBusy ? <LoadingState label="Loading live products…"/> : p.catalogueError ? <ErrorState text={p.catalogueError} retry={p.loadProducts}/> : p.products.length ? <div className="product-grid">{p.products.map(product => <ProductCard key={product.id} product={product} favourite={p.favourites.has(product.id)} busy={p.cartBusy === product.id} onToggleFavourite={p.toggleFavourite} onAddToCart={p.addToCart}/>)}</div> : <div className="empty-state"><Search/><h3>No live products match</h3><p>Try another search or clear your filters. If the catalogue is empty, a product administrator still needs to publish stock.</p><button className="secondary-button" onClick={() => { p.setQuery(''); p.setCategory(''); p.setInStock(false) }}>Clear filters</button></div>}</section></> }
+
+function AuthSheet({ mode, setMode, onClose, onSignedIn }: { mode:AuthMode; setMode:(m:AuthMode)=>void; onClose:()=>void; onSignedIn:()=>Promise<void> }) {
+  const [busy,setBusy]=useState(false), [error,setError]=useState(''), [registered,setRegistered]=useState('')
+  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError('');const data=Object.fromEntries(new FormData(e.currentTarget).entries());try{if(mode==='login'){await api.login(String(data.email),String(data.password));await onSignedIn()}else if(mode==='customer'){await api.registerCustomer(data);setRegistered('Your customer account is ready. Sign in to continue.');setMode('login')}else{const r=await api.registerSeller(data);setRegistered(`Your seller application is ${r.sellerStatus?.toLowerCase()}. Sign in to track it.`);setMode('login')}}catch(v){setError(message(v))}finally{setBusy(false)}}
+  return <Sheet title={mode==='login'?'Welcome back':mode==='customer'?'Create your account':'Open your seller studio'} onClose={onClose}><div className="segmented-control" role="group" aria-label="Account action"><button aria-pressed={mode==='login'} onClick={()=>setMode('login')}>Sign in</button><button aria-pressed={mode==='customer'} onClick={()=>setMode('customer')}>Join to shop</button><button aria-pressed={mode==='seller'} onClick={()=>setMode('seller')}>Join to sell</button></div>{registered&&<Notice kind="success">{registered}</Notice>}{error&&<Notice kind="error">{error}</Notice>}<form className="stack-form" onSubmit={submit}>{mode!=='login'&&<div className="form-grid"><Field name="firstName" label="First name" autoComplete="given-name"/><Field name="lastName" label="Last name" autoComplete="family-name"/><Field name="mobileNumber" label="Mobile number (optional)" autoComplete="tel"/></div>}{mode==='seller'&&<div className="form-grid"><Field name="tradingName" label="Trading name"/><Field name="storeSlug" label="Store address" hint="Lowercase letters, numbers and hyphens" pattern="[a-z0-9]+(?:-[a-z0-9]+)*"/><Field name="registrationNumber" label="Registration number (optional)"/><Field name="supportEmail" label="Support email (optional)" type="email"/></div>}<Field name="email" label="Email address" type="email" autoComplete="email"/><Field name="password" label="Password" type="password" autoComplete={mode==='login'?'current-password':'new-password'} minLength={mode==='login'?undefined:12} hint={mode==='login'?undefined:'Use at least 12 characters.'}/>{mode==='seller'&&<Notice kind="info">Seller accounts start as pending with a draft store. Fulfilment becomes available after administrator approval.</Notice>}<button className="primary-button full-width" disabled={busy}>{busy&&<LoaderCircle className="spin"/>}{mode==='login'?'Sign in securely':mode==='customer'?'Create customer account':'Submit seller application'}</button></form></Sheet> }
+
+function AccountView({user,onSignOut,announce}:{user:CurrentUser;onSignOut:()=>Promise<void>;announce:(s:string)=>void}){
+  const [addresses,setAddresses]=useState<Address[]>([]),[busy,setBusy]=useState(true),[editing,setEditing]=useState<Address|'new'|null>(null),[error,setError]=useState('')
+  const load=useCallback(async()=>{setBusy(true);try{setAddresses(await api.addresses())}catch(v){setError(message(v))}finally{setBusy(false)}},[]);useEffect(()=>{void load()},[load]);async function remove(id:string){if(!window.confirm('Remove this address?'))return;try{await api.deleteAddress(id);await load();announce('Address removed.')}catch(v){setError(message(v))}}
+  return <section className="workspace section-wrap"><WorkspaceHeader eyebrow="Customer account" title={`Hello, ${user.customer?.firstName??user.displayName}`} description="Manage your delivery details and account session."/><div className="workspace-grid"><aside className="profile-card"><span className="avatar">{user.displayName[0]}</span><h2>{user.displayName}</h2><p>{user.email}</p><div className="status-line"><BadgeCheck/> {user.accountStatus} account</div>{user.seller&&<div className="status-line"><Store/> Seller: {user.seller.status}</div>}<button className="secondary-button full-width" onClick={onSignOut}><LogOut/> Sign out</button></aside><div className="workspace-main"><div className="panel-heading"><div><h2>Delivery addresses</h2><p>South African delivery and billing addresses used at checkout.</p></div><button className="primary-button compact" onClick={()=>setEditing('new')}><Plus/> Add address</button></div>{error&&<Notice kind="error">{error}</Notice>}{busy?<LoadingState label="Loading addresses…"/>:addresses.length?<div className="address-grid">{addresses.map(a=><article className="address-card" key={a.id}><div><span className="tag">{a.type}{a.isDefault?' · Default':''}</span><h3>{a.recipientName}</h3><p>{a.line1}{a.line2&&<><br/>{a.line2}</>}<br/>{a.city}, {a.province} {a.postalCode}</p></div><div><button className="text-button" onClick={()=>setEditing(a)}>Edit</button><button className="icon-button danger" aria-label={`Delete address for ${a.recipientName}`} onClick={()=>remove(a.id)}><Trash2/></button></div></article>)}</div>:<div className="empty-state compact"><MapPin/><h3>No delivery address yet</h3><p>Add one before you check out.</p></div>}</div></div>{editing&&<AddressSheet address={editing==='new'?null:editing} onClose={()=>setEditing(null)} onSaved={async()=>{setEditing(null);await load();announce('Address saved.')}}/>}</section> }
+
+function AddressSheet({address,onClose,onSaved}:{address:Address|null;onClose:()=>void;onSaved:()=>Promise<void>}){const[busy,setBusy]=useState(false),[error,setError]=useState('');async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError('');const d=Object.fromEntries(new FormData(e.currentTarget).entries());const body:AddressInput={type:String(d.type),recipientName:String(d.recipientName),line1:String(d.line1),line2:String(d.line2)||null,city:String(d.city),province:String(d.province),postalCode:String(d.postalCode),countryCode:'ZA',isDefault:d.isDefault==='on'};try{address?await api.updateAddress(address.id,body):await api.addAddress(body);await onSaved()}catch(v){setError(message(v))}finally{setBusy(false)}}return <Sheet title={address?'Edit address':'Add an address'} onClose={onClose}>{error&&<Notice kind="error">{error}</Notice>}<form className="stack-form" onSubmit={submit}><label>Address type<select name="type" defaultValue={address?.type??'Shipping'}><option>Shipping</option><option>Billing</option><option>Both</option></select></label><Field name="recipientName" label="Recipient name" defaultValue={address?.recipientName}/><Field name="line1" label="Street address" defaultValue={address?.line1}/><Field name="line2" label="Apartment, suite or landmark (optional)" defaultValue={address?.line2??''}/><div className="form-grid"><Field name="city" label="City" defaultValue={address?.city}/><label>Province<select name="province" defaultValue={address?.province??'Gauteng'}>{provinces.map(p=><option key={p}>{p}</option>)}</select></label><Field name="postalCode" label="Postal code" pattern="[0-9]{4}" defaultValue={address?.postalCode}/></div><label className="check-control"><input name="isDefault" type="checkbox" defaultChecked={address?.isDefault??false}/> Make this my default address</label><button className="primary-button full-width" disabled={busy}>{busy&&<LoaderCircle className="spin"/>} Save address</button></form></Sheet>}
+
+function CartSheet({cart,setCart,onClose,announce}:{cart:Cart;setCart:(c:Cart)=>void;onClose:()=>void;announce:(s:string)=>void}){
+  const[busy,setBusy]=useState(''),[step,setStep]=useState<'cart'|'checkout'|'payment'>('cart'),[addresses,setAddresses]=useState<Address[]>([]),[selected,setSelected]=useState(''),[promotion,setPromotion]=useState(''),[order,setOrder]=useState<Checkout|null>(null),[error,setError]=useState('')
+  async function mutate(id:string,fn:()=>Promise<Cart>){setBusy(id);setError('');try{setCart(await fn())}catch(v){setError(message(v))}finally{setBusy('')}}async function begin(){setBusy('checkout');setError('');try{const r=await api.addresses();setAddresses(r);setSelected(r.find(a=>a.isDefault)?.id??r[0]?.id??'');setStep('checkout')}catch(v){setError(message(v))}finally{setBusy('')}}async function place(){if(!selected)return setError('Add and select a delivery address first.');setBusy('order');try{const r=await api.checkout(selected,promotion);setOrder(r);setCart(emptyCart);setStep('payment')}catch(v){setError(message(v))}finally{setBusy('')}}async function pay(method:string){if(!order)return;setBusy(method);try{const r=await api.pay(order.orderId,method);announce(`Sandbox payment ${r.providerReference} is ${r.status.toLowerCase()}.`)}catch(v){setError(message(v))}finally{setBusy('')}}
+  return <Sheet title={step==='cart'?'Your cart':step==='checkout'?'Delivery & review':'Sandbox payment'} onClose={onClose} wide>{step!=='cart'&&<button className="back-button" onClick={()=>setStep(step==='payment'?'checkout':'cart')}><ArrowLeft/> Back</button>}{error&&<Notice kind="error">{error}</Notice>}{step==='cart'&&<>{cart.items.length?<div className="cart-list">{cart.items.map(i=><article className="cart-item" key={i.id}><div className="cart-thumb">{i.imageUrl?<img src={i.imageUrl} alt={i.imageAltText||''}/>:<Box/>}</div><div><strong>{i.productName}</strong><small>{i.storeName}</small><span>{currency.format(i.unitPrice)} each</span></div><div className="quantity"><button aria-label={`Decrease ${i.productName}`} disabled={i.quantity===1||busy===i.id} onClick={()=>mutate(i.id,()=>api.updateCartItem(i.id,i.quantity-1))}><Minus/></button><span>{i.quantity}</span><button aria-label={`Increase ${i.productName}`} disabled={i.quantity>=i.availableQuantity||busy===i.id} onClick={()=>mutate(i.id,()=>api.updateCartItem(i.id,i.quantity+1))}><Plus/></button></div><button className="icon-button danger" aria-label={`Remove ${i.productName}`} onClick={()=>mutate(i.id,()=>api.removeCartItem(i.id))}><Trash2/></button></article>)}</div>:<div className="empty-state compact"><ShoppingBag/><h3>Your cart is empty</h3><p>Local finds you add will appear here.</p></div>}{cart.items.length>0&&<div className="order-summary"><p><span>Subtotal</span><strong>{currency.format(cart.subtotal)}</strong></p><small>Delivery, promotions and stock are rechecked securely at checkout.</small><button className="primary-button full-width" disabled={busy==='checkout'||cart.items.some(i=>!i.isAvailable)} onClick={begin}>Continue to checkout <ChevronRight/></button></div>}</>}{step==='checkout'&&<div className="checkout-stack"><h3>Delivery address</h3>{addresses.length?addresses.map(a=><label className="selection-card" key={a.id}><input type="radio" name="delivery" checked={selected===a.id} onChange={()=>setSelected(a.id)}/><span><strong>{a.recipientName}</strong>{a.line1}, {a.city}, {a.province} {a.postalCode}</span></label>):<Notice kind="info">No addresses are saved. Close the cart and add one from My account.</Notice>}<Field name="promotion" label="Promotion code (optional)" value={promotion} onChange={e=>setPromotion(e.target.value)}/><button className="primary-button full-width" onClick={place} disabled={!selected||busy==='order'}>{busy==='order'&&<LoaderCircle className="spin"/>} Place sandbox order</button></div>}{step==='payment'&&order&&<div className="payment-panel"><span className="success-mark"><Check/></span><p className="eyebrow">Order reserved</p><h3>{order.orderNumber}</h3><p>{currency.format(order.grandTotal)} · Stock reserved until {dateTime.format(new Date(order.reservationExpiresAt))}</p><div className="order-breakdown"><p><span>Products</span><strong>{currency.format(order.subtotal)}</strong></p><p><span>Discount</span><strong>− {currency.format(order.discountTotal)}</strong></p><p><span>Delivery</span><strong>{currency.format(order.deliveryTotal)}</strong></p></div><h4>Choose a sandbox method</h4><button className="primary-button full-width" disabled={Boolean(busy)} onClick={()=>pay('TestWallet')}>Pay with Test Wallet</button><button className="secondary-button full-width" disabled={Boolean(busy)} onClick={()=>pay('SandboxEft')}>Pay with Sandbox EFT</button><Notice kind="info">This creates a pending sandbox payment reference. Provider completion remains server-side; no card details are collected here.</Notice></div>}</Sheet> }
+
+function SellerView({user,announce}:{user:CurrentUser;announce:(s:string)=>void}){const seller=user.seller,approved=seller?.status==='Approved'&&seller.storeStatus==='Active';const[orders,setOrders]=useState<FulfilmentOrder[]>([]),[busy,setBusy]=useState(true),[error,setError]=useState(''),[dispatch,setDispatch]=useState<string|null>(null);const load=useCallback(async()=>{if(!approved){setBusy(false);return}setBusy(true);try{setOrders(await api.fulfilment())}catch(v){setError(message(v))}finally{setBusy(false)}},[approved]);useEffect(()=>{void load()},[load]);async function transition(o:FulfilmentOrder,action:string,carrier?:string,trackingNumber?:string){setBusy(true);try{await api.transition(o.sellerOrderId,{action,carrier,trackingNumber});announce(`${o.orderNumber} moved forward.`);setDispatch(null);await load()}catch(v){setError(message(v));setBusy(false)}}const next=(s:string)=>s==='ReadyForFulfilment'?'StartPicking':s==='Picking'?'Pack':s==='Packed'?'Dispatch':s==='Shipped'?'Deliver':null;return <section className="workspace seller-workspace section-wrap"><WorkspaceHeader eyebrow="Seller studio" title={seller?.tradingName??'Seller application'} description={approved?'Prepare and dispatch paid orders from your live fulfilment queue.':'Track approval and the capabilities becoming available to your store.'}/><div className="seller-status"><div><span className={`status-dot ${approved?'approved':''}`}/><p><small>Application</small><strong>{seller?.status??'Unavailable'}</strong></p></div><ChevronRight/><div><span className={`status-dot ${seller?.storeStatus==='Active'?'approved':''}`}/><p><small>Store</small><strong>{seller?.storeStatus??'Not created'}</strong></p></div><ChevronRight/><div><span className={`status-dot ${approved?'approved':''}`}/><p><small>Fulfilment</small><strong>{approved?'Ready':'Locked'}</strong></p></div></div>{!approved?<Notice kind="info">Your draft store cannot fulfil orders until an administrator approves the seller and activates the store. That administration API is not available in this release.</Notice>:<>{error&&<Notice kind="error">{error}</Notice>}{busy?<LoadingState label="Loading fulfilment queue…"/>:orders.length?<div className="fulfilment-list">{orders.map(o=>{const action=next(o.status);return <article className="fulfilment-card" key={o.sellerOrderId}><div className="order-title"><span className="tag">{o.status.replace(/([A-Z])/g,' $1').trim()}</span><small>{o.orderNumber}</small><h3>{o.recipientName}</h3><p><MapPin/> {o.city}, {o.province} · Paid {dateTime.format(new Date(o.paidAt))}</p></div><ul>{o.items.map(i=><li key={i.orderItemId}><span>{i.quantity}×</span>{i.productName}<small>{i.sku}</small></li>)}</ul>{o.shipment?.trackingNumber&&<p className="tracking"><Truck/> {o.shipment.carrier}: {o.shipment.trackingNumber}</p>}{action&&(action==='Dispatch'?<button className="primary-button compact" onClick={()=>setDispatch(o.sellerOrderId)}>Add tracking & dispatch</button>:<button className="primary-button compact" onClick={()=>transition(o,action)}>{action.replace(/([A-Z])/g,' $1').trim()} <ArrowRight/></button>)}</article>})}</div>:<div className="empty-state"><ClipboardList/><h3>Your queue is clear</h3><p>Paid orders ready for your store will appear here.</p></div>}</>}<div className="module-grid"><ModuleCard icon={Box} title="Products & inventory" state="Needs BE-008" text="Create products, images, prices and stock after the seller administration API is released."/><ModuleCard icon={BarChart3} title="Store analytics" state="Needs BE-009" text="Sales, stock and seller-performance reporting requires the reporting API."/><ModuleCard icon={Settings} title="Store settings" state="Needs BE-008" text="Store publishing and staff-managed approvals remain administrator-controlled."/></div>{dispatch&&<DispatchSheet onClose={()=>setDispatch(null)} onSubmit={(c,t)=>transition(orders.find(o=>o.sellerOrderId===dispatch)!,'Dispatch',c,t)}/>}</section>}
+
+function DispatchSheet({onClose,onSubmit}:{onClose:()=>void;onSubmit:(c:string,t:string)=>Promise<void>}){const[busy,setBusy]=useState(false);return <Sheet title="Dispatch order" onClose={onClose}><form className="stack-form" onSubmit={async e=>{e.preventDefault();setBusy(true);const d=new FormData(e.currentTarget);await onSubmit(String(d.get('carrier')),String(d.get('tracking')));setBusy(false)}}><Field name="carrier" label="Carrier"/><Field name="tracking" label="Tracking number"/><button className="primary-button full-width" disabled={busy}>{busy&&<LoaderCircle className="spin"/>} Confirm dispatch</button></form></Sheet>}
+function ModuleCard({icon:Icon,title,state,text}:{icon:typeof Box;title:string;state:string;text:string}){return <article className="module-card"><Icon/><span className="tag muted">{state}</span><h3>{title}</h3><p>{text}</p></article>}
+function WorkspaceHeader({eyebrow,title,description}:{eyebrow:string;title:string;description:string}){return <div className="workspace-header"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p>{description}</p></div>}
+function LoadingState({label}:{label:string}){return <div className="loading-state" role="status"><LoaderCircle className="spin"/> {label}</div>}
+function ErrorState({text,retry}:{text:string;retry:()=>void}){return <div className="empty-state"><AlertCircle/><h3>We couldn’t load this</h3><p>{text}</p><button className="secondary-button" onClick={retry}>Try again</button></div>}
+function Notice({kind,children}:{kind:'success'|'error'|'info';children:React.ReactNode}){return <div className={`notice notice--${kind}`} role={kind==='error'?'alert':'status'}>{kind==='success'?<BadgeCheck/>:kind==='error'?<AlertCircle/>:<ShieldCheck/>}{children}</div>}
+function Sheet({title,onClose,children,wide}:{title:string;onClose:()=>void;children:React.ReactNode;wide?:boolean}){const ref=useRef<HTMLElement>(null),close=useRef(onClose);close.current=onClose;useEffect(()=>{const previous=document.activeElement as HTMLElement|null;const priorOverflow=document.body.style.overflow;document.body.style.overflow='hidden';ref.current?.querySelector<HTMLElement>('button,input,select')?.focus();function keys(e:KeyboardEvent){if(e.key==='Escape')close.current();if(e.key==='Tab'&&ref.current){const controls=[...ref.current.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href]')];if(!controls.length)return;const first=controls[0],last=controls.at(-1)!;if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}}document.addEventListener('keydown',keys);return()=>{document.removeEventListener('keydown',keys);document.body.style.overflow=priorOverflow;previous?.focus()}},[]);return <div className="sheet-layer" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section ref={ref} className={`sheet ${wide?'sheet--wide':''}`} role="dialog" aria-modal="true" aria-label={title}><header><h2>{title}</h2><button className="icon-button" aria-label="Close" onClick={onClose}><X/></button></header><div className="sheet__body">{children}</div></section></div>}
+type FieldProps=React.InputHTMLAttributes<HTMLInputElement>&{label:string;hint?:string}
+function Field({label,hint,...props}:FieldProps){return <label>{label}<input {...props} required={props.required??!label.includes('optional')}/>{hint&&<small>{hint}</small>}</label>}

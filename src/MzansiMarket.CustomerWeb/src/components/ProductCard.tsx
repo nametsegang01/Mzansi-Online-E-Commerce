@@ -1,37 +1,14 @@
-import {
-  Armchair,
-  Coffee,
-  Heart,
-  Lamp,
-  Palette,
-  Shirt,
-  ShoppingBasket,
-  Sparkles,
-  Star,
-  Utensils,
-} from 'lucide-react'
-import type { Product, ProductArtwork } from '../data/catalog'
-
-const artworkIcons: Record<ProductArtwork, typeof Armchair> = {
-  basket: ShoppingBasket,
-  chair: Armchair,
-  coffee: Coffee,
-  lamp: Lamp,
-  shirt: Shirt,
-  skincare: Sparkles,
-  food: Utensils,
-  art: Palette,
-}
+import { Heart, Image, ShoppingBag, Store } from 'lucide-react'
+import type { Product } from '../api/types'
 
 const currency = new Intl.NumberFormat('en-ZA', {
-  style: 'currency',
-  currency: 'ZAR',
-  minimumFractionDigits: 2,
+  style: 'currency', currency: 'ZAR',
 })
 
 type ProductCardProps = {
   product: Product
   favourite: boolean
+  busy?: boolean
   onToggleFavourite: (product: Product) => void
   onAddToCart: (product: Product) => void
 }
@@ -40,14 +17,13 @@ export function ProductCard({
   product,
   favourite,
   onToggleFavourite,
-  onAddToCart,
+  onAddToCart, busy,
 }: ProductCardProps) {
-  const ArtworkIcon = artworkIcons[product.artwork]
-
   return (
     <article className="product-card">
-      <div className="product-card__visual" style={{ '--product-tone': product.tone } as React.CSSProperties}>
-        {product.badge && <span className="product-card__badge">{product.badge}</span>}
+      <div className="product-card__visual">
+        {product.primaryImageUrl ? <img src={product.primaryImageUrl} alt={product.primaryImageAltText || product.name} /> : <span className="product-art" aria-label="Product image unavailable"><Image size={58} strokeWidth={1.2} /></span>}
+        <span className={`stock-badge ${product.isInStock ? '' : 'stock-badge--out'}`}>{product.isInStock ? `${product.availableQuantity} available` : 'Sold out'}</span>
         <button
           className="icon-button product-card__favourite"
           type="button"
@@ -57,26 +33,15 @@ export function ProductCard({
         >
           <Heart fill={favourite ? 'currentColor' : 'none'} size={19} />
         </button>
-        <span className={`product-art product-art--${product.artwork}`} aria-hidden="true">
-          <ArtworkIcon size={76} strokeWidth={1.15} />
-        </span>
       </div>
       <div className="product-card__content">
-        <div className="product-card__seller">
-          <span>{product.seller}</span>
-          <span className="rating" aria-label={`${product.rating} out of 5 stars`}>
-            <Star size={13} fill="currentColor" aria-hidden="true" /> {product.rating}
-          </span>
-        </div>
+        <p className="product-card__seller"><Store size={13} /> {product.storeName}</p>
         <h3>{product.name}</h3>
-        <p className="product-card__province">Made in {product.province}</p>
+        <p className="product-card__province">SKU {product.sku}</p>
         <div className="product-card__footer">
-          <p className="product-card__price">
-            <strong>{currency.format(product.price)}</strong>
-            {product.previousPrice && <del>{currency.format(product.previousPrice)}</del>}
-          </p>
-          <button className="add-button" type="button" onClick={() => onAddToCart(product)}>
-            Add
+          <strong>{currency.format(product.price)}</strong>
+          <button className="add-button" type="button" disabled={!product.isInStock || busy} onClick={() => onAddToCart(product)}>
+            <ShoppingBag size={15} /> {busy ? 'Adding…' : 'Add'}
           </button>
         </div>
       </div>

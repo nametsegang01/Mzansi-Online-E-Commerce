@@ -1,48 +1,67 @@
-# Customer web implementation state
+# Customer and seller web implementation state
 
 ## Objective and phase
 
-- Objective: establish the customer-facing web application and visual language.
-- Current phase: storefront foundation complete and validated.
+- Objective: deliver one responsive marketplace web application for customer and seller accounts.
 - Application: `src/MzansiMarket.CustomerWeb`.
+- Current phase: live API integration through backend work unit BE-006.
+- Production API default: `https://mzansi-market-api.onrender.com`.
 
 ## Architecture and decisions
 
-- React 19, TypeScript 6, and Vite 8 provide the frontend foundation.
-- The ASP.NET backend remains the source of truth for future catalogue, pricing, stock, basket, account, and order data.
-- Mock products are isolated in `src/data/catalog.ts` so the UI can be replaced by a typed API client without redesigning components.
-- Product cards preserve seller and province context to reinforce the multi-seller marketplace model.
-- Brand tokens follow the supplied customer references: forest teal, sage/eucalyptus, warm ivory, and restrained gold.
-- System fonts are used for controls and body copy; a restrained serif display face supplies the editorial marketplace character.
-- Translucency is reserved for navigation and floating controls. Opaque fallbacks support reduced transparency.
+- React 19, TypeScript 6, and Vite 8 remain the frontend foundation.
+- A typed API client now owns all HTTP contracts, bearer-session persistence, one-at-a-time token refresh, API problem parsing, and a bounded 30-second request timeout.
+- Authentication tokens are kept in session storage rather than long-lived local storage. Logout-all is exposed by the client for later account-security UI expansion.
+- One role-aware application shell serves customers and sellers. Seller registration also creates the customer profile required by the backend.
+- Product, stock, cart, price, promotion, delivery, checkout, payment, and fulfilment state comes only from the ASP.NET API. The former mock catalogue is no longer used by the application.
+- Translucency remains limited to navigation and modal layers. Content and transactional surfaces use opaque cards with clear focus treatment.
+- Sheets restore focus, close with Escape, contain keyboard focus, and lock background scrolling. Reduced-motion and reduced-transparency fallbacks remain active.
 
-## Completed and validated
+## Completed frontend work units
 
-- Responsive header, navigation, search, hero, category filters, product grid, seller story, newsletter, footer, and mobile tab bar.
-- Search, category selection, reversible favourites, cart count, and live-region feedback.
-- Four automated interaction and accessibility-oriented component tests.
-- Production TypeScript/Vite build.
-- Dependency audit with zero known vulnerabilities.
-- Browser inspection at 1440×1000 and 390×844.
-- Mobile document width equals viewport width; no horizontal overflow.
-- Browser interaction test confirmed search and cart behavior with no console errors.
-- Reduced motion, reduced transparency, increased contrast, focus-visible, and forced-color CSS behavior included.
-- Released as the `mzansi-market-customer` Render Static Site from the `main` branch.
+1. `FE-001 API and session foundation` — PASS
+   - Typed contracts for identity, catalogue, addresses, cart, checkout, sandbox payment, and fulfilment.
+   - Automatic refresh-token exchange after a 401, session clearing on refresh failure, and normalized API errors.
+   - Loading, empty, retry, busy, disabled, and live-region feedback states.
+
+2. `FE-002 Customer identity and account` — PASS
+   - Customer registration, seller registration, login, session restoration, sign-out, role-aware navigation, and account summary.
+   - Address list, create, update, default selection, and recoverable delete confirmation.
+
+3. `FE-003 Live shopping and checkout` — PASS against available APIs
+   - Live categories and products, debounced server search, category, stock, and sort filters.
+   - Auth-gated cart add, quantity update, removal, current server totals, address selection, promotion input, idempotent checkout, order reservation summary, and sandbox payment initiation.
+   - The browser never collects card numbers or provider secrets. Payment completion remains a server/provider event.
+
+4. `FE-004 Seller onboarding and fulfilment` — PASS against available APIs
+   - Full seller application, pending/draft status journey, approved-store authorization boundary, fulfilment queue, picking, packing, dispatch with carrier/tracking, and delivery transition.
+   - Clear dependency cards identify unavailable seller catalogue, store administration, and analytics capabilities.
+
+5. `FE-005 Quality checkpoint` — PASS locally
+   - Production TypeScript/Vite build passes.
+   - Vitest interaction suite passes 4/4.
+   - Desktop browser inspection confirms the storefront and authentication sheet render without console warnings.
+   - Mobile DOM inspection at 390×844 confirms document width remains within the viewport.
+
+## Backend dependencies that prevent a truthful “entire system” frontend
+
+- `BE-007`: cancellations, returns, refunds, customer order history, and refund status endpoints.
+- `BE-008`: seller approval, store editing/publishing, product/category/image/price/stock/promotion administration, and staff role endpoints.
+- `BE-009`: customer order tracking history, seller sales/stock/performance reporting, audit access, and export endpoints.
+- Product administration or release seed data is needed before the live production catalogue can show sellable products. The current Render catalogue returns zero products.
+- The sandbox payment initiation endpoint creates a pending provider reference. Only the protected server event endpoint can complete it; the frontend correctly does not receive that secret.
+
+## Release configuration
+
+- Static site: `mzansi-market-customer` (`srv-da8d5cajnfac73e1j7p0`).
 - Production URL: `https://mzansi-market-customer.onrender.com`.
-- Render service ID: `srv-da8d5cajnfac73e1j7p0`.
-- Deployment uses `npm ci && npm run build`, publishes the Vite `dist` output, and automatically deploys new commits.
-- Initial production deployment `dep-da8d5cqjnfac73e1j8g0` reached `live`; the root URL returned HTTP 200 and Render reported no build errors.
+- Build command: `npm ci && npm run build`.
+- Publish directory: `dist`.
+- Optional override: `VITE_API_URL`; production defaults to the current Render API URL.
 
-## Pending work units
+## Next dependency-ordered work
 
-1. Public catalogue API: paginated products, categories, sellers, search, filters, stock visibility, and product details.
-2. Typed API client and query caching with loading, empty, retry, and offline states.
-3. Customer authentication, addresses, favourites persistence, and account screens.
-4. Transactional basket and checkout integrated with stock reservation and sandbox payment records.
-5. Order tracking, returns, refunds, notifications, and end-to-end accessibility/performance validation.
-
-## Known limitations
-
-- Product imagery is currently code-native illustrative artwork, not seller-uploaded object-storage media.
-- Cart and favourites are intentionally in-memory until customer identity and commerce APIs are implemented.
-- The filter control is a visual affordance; advanced filter-sheet behavior belongs to the catalogue integration work unit.
+1. Implement BE-007 through BE-009 and their authorization tests.
+2. Add the corresponding customer orders/returns and seller catalogue/reporting screens.
+3. Seed or administer fictional catalogue inventory for end-to-end demonstration.
+4. Run the cross-system BE-010 release checkpoint, including authenticated browser journeys and accessibility/performance auditing.
