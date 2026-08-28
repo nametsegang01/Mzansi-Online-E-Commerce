@@ -2,6 +2,18 @@
 
 Seller-aware e-commerce marketplace backend foundation built with ASP.NET Core, EF Core, and PostgreSQL 18.
 
+## Customer web application
+
+The responsive React/TypeScript customer storefront lives in `src/MzansiMarket.CustomerWeb`.
+
+```powershell
+cd src/MzansiMarket.CustomerWeb
+npm install
+npm run dev
+```
+
+See the [customer-web README](src/MzansiMarket.CustomerWeb/README.md) for implemented interactions, quality checks, and the current mock-data boundary.
+
 ## Database foundation
 
 The first migration creates separate `identity`, `marketplace`, and `audit` schemas. It supports customers, sellers and stores, product catalogues, stock control, multi-seller orders, sandbox payment references, fulfilment, returns, refunds, promotions, seller payouts, and audit records.
@@ -26,4 +38,5 @@ Supply the database connection through `ConnectionStrings__DefaultConnection` or
 - [Data dictionary](Project-Design-Portfolio/07-Database-Design/Data-Dictionary.md)
 - [Migration plan](Project-Design-Portfolio/07-Database-Design/Migration-Plan.md)
 - [Live database evidence](Project-Design-Portfolio/13-Project-Evidence/DATABASE-STATE.md)
+- [Customer web state](Project-Design-Portfolio/13-Project-Evidence/CUSTOMER-WEB-STATE.md)
 - [Generated idempotent SQL](artifacts/database/InitialMarketplaceSchema.sql)
