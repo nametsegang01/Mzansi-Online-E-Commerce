@@ -5,7 +5,7 @@
 - Render database: `mzansi-market-db`
 - PostgreSQL version: 18
 - Region and plan: Frankfurt, Free
-- Applied migration: `20260827223811_InitialMarketplaceSchema`
+- Applied migrations: initial schema plus DATA-002 through DATA-004, ending at `20260828065853_AddSandboxPaymentEvents`
 - Application schemas: `identity`, `marketplace`, `audit`
 - Application tables: 33, plus `public.__EFMigrationsHistory`
 - Seeded roles: Customer, Seller, ProductAdministrator, FulfilmentEmployee, BusinessManager, SystemAdministrator
@@ -14,6 +14,9 @@
 - Forbidden PAN/CVV-style columns: 0
 - Repeat migration result: already up to date
 - Final public PostgreSQL access: blocked
+- Render API connectivity: private network from `mzansi-market-api`
+- Persisted authentication data-protection key ring: active
+- Customer default-address, active-cart, checkout/payment idempotency, and provider-event replay constraints: active
 
 ## Verification performed
 
@@ -22,6 +25,7 @@
 - NuGet vulnerability audit found no vulnerable direct or transitive packages.
 - Generated idempotent SQL contains no `DROP`, `TRUNCATE`, or `DELETE` statements.
 - Live queries verified schema counts, migration history, role seeds, constraints, indexes, and payment-data boundaries.
+- API startup logs verified each additive migration and reported the database current; `/health/database` returns 200 publicly.
 
 ## Operational limitation
 

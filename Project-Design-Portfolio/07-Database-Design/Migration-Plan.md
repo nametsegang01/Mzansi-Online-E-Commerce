@@ -58,7 +58,7 @@ If creation fails before EF records the migration, PostgreSQL rolls back the mig
 
 ## Current status
 
-Generated and validated locally; not yet applied to the Render PostgreSQL database. Production authentication deployment remains blocked on applying this additive migration.
+Applied successfully to `mzansi-market-db` by the controlled API startup on 2026-08-28. A data-protection key was created, and public registration/login/refresh verification passed across the deployed service.
 
 # DATA-003 - Customer invariants and checkout idempotency
 
@@ -80,7 +80,7 @@ PostgreSQL applies each migration transactionally. If a uniqueness check fails, 
 
 ## Current status
 
-Generated and validated locally; not yet applied to the Render PostgreSQL database.
+Applied successfully to `mzansi-market-db` by the controlled API startup on 2026-08-28. Render logs confirmed both customer-invariant indexes and the checkout idempotency columns/index.
 
 # DATA-004 - Sandbox payment event receipts
 
@@ -101,4 +101,4 @@ If migration application fails, PostgreSQL rolls it back transactionally. Once c
 
 ## Current status
 
-Generated and validated locally; not yet applied to the Render PostgreSQL database.
+Applied successfully to `mzansi-market-db` by the controlled API startup on 2026-08-28. Render logs confirmed the payment key, provider-event table, foreign key, and duplicate-prevention indexes.

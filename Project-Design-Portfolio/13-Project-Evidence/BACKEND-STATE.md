@@ -52,11 +52,11 @@
   - Data-protection keys persist in PostgreSQL.
   - Positive, negative, validation, lockout, and permission-focused automated tests pass.
 
-- Status: PASS locally; not yet released.
+- Status: PASS locally and authentication routes verified on Render.
 - Implemented customer and seller registration, opaque bearer access/refresh tokens, current-account inspection, client logout, logout-all security-stamp rotation, password lockout, active-account enforcement, approved-seller enforcement, staff policies, production CORS, and per-client auth throttling.
 - Added the additive `20260828054251_PersistDataProtectionKeys` migration and idempotent SQL.
 - Validation: 10/10 automated tests passed; release build produced zero warnings/errors; EF reports no pending model changes; NuGet audit reports no vulnerable API packages.
-- Release dependency: apply `DATA-002` before serving deployed authentication traffic.
+- Release result: DATA-002 is applied and the public registration, login, refresh, current-user, invalid-login, database-health, and production-CORS checks pass.
 
 ### BE-002 Public catalogue
 
@@ -67,7 +67,7 @@
   - Invalid filters return specific validation problems.
   - Positive, hidden-content, filtering, paging, and not-found API tests pass.
 
-- Status: PASS locally; not yet released.
+- Status: PASS locally; deployed on Render with the API service.
 - Implemented active-category listing; active product paging, search, category/store/price/availability filters and sorting; product detail by ID and store/product slug; accessible primary-image metadata; and strict draft, inactive-category, deleted-product, and suspended-store visibility boundaries.
 - Validation: full suite passes 14/14 tests; formatting verification passes; release build remains warning-free.
 
@@ -80,7 +80,7 @@
   - Cart responses recalculate item and subtotal values from current server-side catalogue prices.
   - Anonymous, cross-customer, invalid-quantity, unavailable-stock, inactive-product, and not-found cases are covered by API tests.
 
-- Status: PASS locally; not yet released.
+- Status: PASS locally; deployed on Render with the API service.
 - Implemented owned South African address management, deterministic default-address replacement, one active cart, stock-aware cart mutations, current-price summaries, and database-level partial unique indexes for customer invariants.
 
 ### BE-004 Transactional checkout
@@ -94,7 +94,7 @@
   - Successful replay returns the original order without reserving stock twice.
   - Positive, replay, validation, authentication, invalid-promotion, address-type, and changed-stock cases are tested.
 
-- Status: PASS locally; not yet released.
+- Status: PASS locally; deployed on Render with the API service.
 - Implemented multi-seller order creation, snapshotting, promotion allocation, configurable delivery, seller commission totals, 15-minute stock reservations, cart conversion, audit evidence, and customer-scoped idempotency.
 - Validation: full suite passes 20/20 tests at the BE-004 checkpoint; release build remains warning-free.
 
@@ -108,7 +108,7 @@
   - Failed/cancelled or expired-reservation outcomes release reserved stock and cancel the unpaid order.
   - Repeated payment keys and event IDs return the original state without duplicate financial, stock, or audit effects.
 
-- Status: PASS locally; not yet released.
+- Status: PASS locally; deployed on Render with the API service.
 - Implemented sandbox payment initiation, constant-time webhook-secret verification, minimal provider-event receipts, duplicate handling, payment/order/seller-order transitions, reservation commit/release, inventory evidence, and audit evidence.
 - Validation: full suite passes 22/22 tests; release build remains warning-free.
 
@@ -121,7 +121,7 @@
   - Packing creates one shipment; dispatch requires bounded carrier/tracking values; delivery timestamps the shipment.
   - Seller-order transitions update the parent order's partial-shipment, shipment, and delivery state and append actor-attributed audit evidence.
 
-- Status: PASS locally; not yet released.
+- Status: PASS locally; deployed on Render with the API service.
 - Implemented filtered work queues, approved-seller ownership enforcement, controlled picking/packing/dispatch/delivery, shipment tracking, aggregate order status updates, and audit evidence.
 - Validation: full suite passes 23/23 tests; cross-seller access, invalid transitions, required dispatch data, shipment lifecycle, aggregate status, and audit persistence are covered.
 
@@ -131,6 +131,17 @@
 - The current Render Free PostgreSQL database expires and has no retained backups; it is not suitable for real users or production transactions.
 - Product image object storage and the sandbox payment provider remain unselected implementation dependencies.
 - Database persistence protects key-ring availability, not key confidentiality by itself. Before a real production launch, wrap data-protection keys with an approved certificate or external key-encryption mechanism and verify restoration.
+
+## Render release checkpoint
+
+- Service: `mzansi-market-api` (`srv-da8lb75g1s2s739oncb0`), Docker, Frankfurt, Free.
+- Public URL: `https://mzansi-market-api.onrender.com`.
+- Source release: commit `3e7584d` on `main`.
+- Environment: private `DATABASE_URL`, Production environment, controlled startup migrations, deployed-frontend-only CORS, authentication rate limiting, and a generated sandbox webhook secret.
+- Database: DATA-002 through DATA-004 applied successfully at startup; Render logs report the database migrations are current.
+- Platform health check: `/health/database`.
+- Public verification: health 200/Healthy; customer registration 201; login and refresh issue opaque tokens; `/api/auth/me` returns the matching fictional customer and Customer role; invalid password returns 401; the customer frontend origin is allowed and an untrusted origin receives no CORS allow header.
+- Free-tier limitation: cold starts can delay the first request after inactivity, and the database remains temporary development infrastructure.
 
 ## Next ready action
 
