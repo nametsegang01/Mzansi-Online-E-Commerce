@@ -27,6 +27,11 @@
 - Mobile document width equals viewport width; no horizontal overflow.
 - Browser interaction test confirmed search and cart behavior with no console errors.
 - Reduced motion, reduced transparency, increased contrast, focus-visible, and forced-color CSS behavior included.
+- Released as the `mzansi-market-customer` Render Static Site from the `main` branch.
+- Production URL: `https://mzansi-market-customer.onrender.com`.
+- Render service ID: `srv-da8d5cajnfac73e1j7p0`.
+- Deployment uses `npm ci && npm run build`, publishes the Vite `dist` output, and automatically deploys new commits.
+- Initial production deployment `dep-da8d5cqjnfac73e1j8g0` reached `live`; the root URL returned HTTP 200 and Render reported no build errors.
 
 ## Pending work units
 
