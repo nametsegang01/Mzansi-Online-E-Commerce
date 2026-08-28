@@ -35,7 +35,6 @@ builder.Services.AddDbContext<MarketplaceDbContext>(options =>
     options.UseNpgsql(connectionString, postgres =>
     {
         postgres.SetPostgresVersion(18, 0);
-        postgres.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
     }));
 
 builder.Services.AddDataProtection()
