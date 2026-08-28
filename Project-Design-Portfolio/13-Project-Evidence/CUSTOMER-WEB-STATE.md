@@ -58,6 +58,9 @@
 - Build command: `npm ci && npm run build`.
 - Publish directory: `dist`.
 - Optional override: `VITE_API_URL`; production defaults to the current Render API URL.
+- Live source release: `bd9a58b` (`Integrate customer and seller web journeys`).
+- Render deploy: `dep-da8ne8qjnfac73dsk7lg`, status `live` on 2026-08-28.
+- CDN verification: root HTTP request succeeded and the deployed JavaScript bundle contains the seller-studio and live-stock application paths.
 
 ## Next dependency-ordered work
 
