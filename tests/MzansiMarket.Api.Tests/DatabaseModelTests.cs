@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using MzansiMarket.Api.Data;
 using MzansiMarket.Api.Domain;
 using Npgsql;
@@ -42,6 +43,7 @@ public sealed class DatabaseModelTests
         Assert.Equal("SellerOrders", model.FindEntityType(typeof(SellerOrder))!.GetTableName());
         Assert.Equal("SellerPayouts", model.FindEntityType(typeof(SellerPayout))!.GetTableName());
         Assert.Equal("audit", model.FindEntityType(typeof(AuditEntry))!.GetSchema());
+        Assert.Equal("identity", model.FindEntityType(typeof(DataProtectionKey))!.GetSchema());
         Assert.True(model.GetEntityTypes().Count() >= 30);
     }
 
@@ -70,6 +72,7 @@ public sealed class DatabaseModelTests
         Assert.Contains("CK_Orders_Totals", sql);
         Assert.Contains("CREATE SCHEMA identity", sql);
         Assert.Contains("CREATE SCHEMA audit", sql);
+        Assert.Contains("DataProtectionKeys", sql);
     }
 
     private static MarketplaceDbContext CreateContext()

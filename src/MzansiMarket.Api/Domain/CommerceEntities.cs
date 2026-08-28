@@ -21,6 +21,8 @@ public sealed class CartItem : Entity
 public sealed class Order : Entity
 {
     public string OrderNumber { get; set; } = string.Empty;
+    public string? CheckoutKey { get; set; }
+    public string? PromotionCode { get; set; }
     public Guid CustomerId { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.PendingPayment;
     public decimal Subtotal { get; set; }
@@ -99,6 +101,7 @@ public sealed class StockReservation : Entity
 public sealed class PaymentRecord : Entity
 {
     public Guid OrderId { get; set; }
+    public string? PaymentKey { get; set; }
     public string Provider { get; set; } = string.Empty;
     public string? ProviderReference { get; set; }
     public string PaymentMethodType { get; set; } = string.Empty;
@@ -109,6 +112,18 @@ public sealed class PaymentRecord : Entity
     public DateTimeOffset? PaidAt { get; set; }
     public Order Order { get; set; } = null!;
     public ICollection<RefundRecord> Refunds { get; set; } = [];
+    public ICollection<PaymentProviderEvent> ProviderEvents { get; set; } = [];
+}
+
+public sealed class PaymentProviderEvent
+{
+    public long Id { get; set; }
+    public Guid PaymentRecordId { get; set; }
+    public string Provider { get; set; } = string.Empty;
+    public string EventId { get; set; } = string.Empty;
+    public string EventType { get; set; } = string.Empty;
+    public DateTimeOffset ReceivedAt { get; set; }
+    public PaymentRecord PaymentRecord { get; set; } = null!;
 }
 
 public sealed class Shipment : Entity

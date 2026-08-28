@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MzansiMarket.Api.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MzansiMarket.Api.Data.Migrations
 {
     [DbContext(typeof(MarketplaceDbContext))]
-    partial class MarketplaceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260828054251_PersistDataProtectionKeys")]
+    partial class PersistDataProtectionKeys
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -282,10 +285,6 @@ namespace MzansiMarket.Api.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .IsUnique()
-                        .HasFilter("\"IsDefault\"");
-
                     b.HasIndex("UserId", "IsDefault");
 
                     b.ToTable("Addresses", "marketplace");
@@ -455,10 +454,6 @@ namespace MzansiMarket.Api.Data.Migrations
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CustomerId")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 'Active'");
 
                     b.HasIndex("CustomerId", "Status");
 
@@ -672,10 +667,6 @@ namespace MzansiMarket.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<string>("CheckoutKey")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -713,10 +704,6 @@ namespace MzansiMarket.Api.Data.Migrations
                     b.Property<DateTimeOffset?>("PlacedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("PromotionCode")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -735,10 +722,6 @@ namespace MzansiMarket.Api.Data.Migrations
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
-
-                    b.HasIndex("CustomerId", "CheckoutKey")
-                        .IsUnique()
-                        .HasFilter("\"CheckoutKey\" IS NOT NULL");
 
                     b.HasIndex("CustomerId", "CreatedAt");
 
@@ -855,47 +838,6 @@ namespace MzansiMarket.Api.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("MzansiMarket.Api.Domain.PaymentProviderEvent", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("EventId")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)");
-
-                    b.Property<Guid>("PaymentRecordId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
-
-                    b.Property<DateTimeOffset>("ReceivedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PaymentRecordId");
-
-                    b.HasIndex("Provider", "EventId")
-                        .IsUnique();
-
-                    b.ToTable("PaymentProviderEvents", "marketplace");
-                });
-
             modelBuilder.Entity("MzansiMarket.Api.Domain.PaymentRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -928,10 +870,6 @@ namespace MzansiMarket.Api.Data.Migrations
                     b.Property<DateTimeOffset?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("PaymentKey")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("PaymentMethodType")
                         .IsRequired()
                         .HasMaxLength(80)
@@ -958,9 +896,7 @@ namespace MzansiMarket.Api.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId", "PaymentKey")
-                        .IsUnique()
-                        .HasFilter("\"PaymentKey\" IS NOT NULL");
+                    b.HasIndex("OrderId");
 
                     b.HasIndex("Provider", "ProviderReference")
                         .IsUnique()
@@ -1864,17 +1800,6 @@ namespace MzansiMarket.Api.Data.Migrations
                     b.Navigation("SellerOrder");
                 });
 
-            modelBuilder.Entity("MzansiMarket.Api.Domain.PaymentProviderEvent", b =>
-                {
-                    b.HasOne("MzansiMarket.Api.Domain.PaymentRecord", "PaymentRecord")
-                        .WithMany("ProviderEvents")
-                        .HasForeignKey("PaymentRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("PaymentRecord");
-                });
-
             modelBuilder.Entity("MzansiMarket.Api.Domain.PaymentRecord", b =>
                 {
                     b.HasOne("MzansiMarket.Api.Domain.Order", "Order")
@@ -2153,8 +2078,6 @@ namespace MzansiMarket.Api.Data.Migrations
 
             modelBuilder.Entity("MzansiMarket.Api.Domain.PaymentRecord", b =>
                 {
-                    b.Navigation("ProviderEvents");
-
                     b.Navigation("Refunds");
                 });
 

@@ -9,3 +9,69 @@ GET {{MzansiMarket.Api_HostAddress}}/health/database
 Accept: application/json
 
 ###
+
+POST {{MzansiMarket.Api_HostAddress}}/api/auth/register/customer
+Content-Type: application/json
+
+{
+  "email": "naledi.customer@example.test",
+  "password": "LocalOnly!2345",
+  "firstName": "Naledi",
+  "lastName": "Dlamini",
+  "mobileNumber": "+27 71 000 0000"
+}
+
+###
+
+POST {{MzansiMarket.Api_HostAddress}}/api/auth/register/seller
+Content-Type: application/json
+
+{
+  "email": "lerato.seller@example.test",
+  "password": "LocalOnly!2345",
+  "firstName": "Lerato",
+  "lastName": "Mokoena",
+  "mobileNumber": "+27 72 000 0000",
+  "tradingName": "Ubuntu Goods",
+  "registrationNumber": "FICTIONAL-001",
+  "storeSlug": "ubuntu-goods",
+  "supportEmail": "lerato.seller@example.test"
+}
+
+###
+
+POST {{MzansiMarket.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "naledi.customer@example.test",
+  "password": "LocalOnly!2345"
+}
+
+###
+
+@accessToken = replace-with-access-token
+@refreshToken = replace-with-refresh-token
+
+GET {{MzansiMarket.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+POST {{MzansiMarket.Api_HostAddress}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
+
+POST {{MzansiMarket.Api_HostAddress}}/api/auth/logout-all
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{}
+
+###

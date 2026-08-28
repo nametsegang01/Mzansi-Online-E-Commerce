@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Domain;
 
 namespace MzansiMarket.Api.Data;
 
 public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> options)
-    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options)
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IDataProtectionKeyContext
 {
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
     public DbSet<SellerProfile> SellerProfiles => Set<SellerProfile>();
     public DbSet<Address> Addresses => Set<Address>();
@@ -27,6 +30,7 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<StockReservation> StockReservations => Set<StockReservation>();
     public DbSet<PaymentRecord> PaymentRecords => Set<PaymentRecord>();
+    public DbSet<PaymentProviderEvent> PaymentProviderEvents => Set<PaymentProviderEvent>();
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<ReturnRequest> ReturnRequests => Set<ReturnRequest>();
     public DbSet<RefundRecord> RefundRecords => Set<RefundRecord>();
@@ -42,6 +46,7 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
         modelBuilder.HasDefaultSchema("marketplace");
 
         ConfigureIdentity(modelBuilder);
+        modelBuilder.Entity<DataProtectionKey>().ToTable("DataProtectionKeys", "identity");
         ConfigureProfiles(modelBuilder);
         ConfigureCatalog(modelBuilder);
         ConfigureCommerce(modelBuilder);
@@ -179,6 +184,7 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
             entity.Property(x => x.PostalCode).HasMaxLength(20).IsRequired();
             entity.Property(x => x.CountryCode).HasMaxLength(2).IsFixedLength();
             entity.HasIndex(x => new { x.UserId, x.IsDefault });
+            entity.HasIndex(x => x.UserId).IsUnique().HasFilter("\"IsDefault\"");
             entity.HasOne(x => x.User).WithMany(x => x.Addresses)
                 .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -289,6 +295,7 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
             entity.ToTable("Carts");
             entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
             entity.HasIndex(x => new { x.CustomerId, x.Status });
+            entity.HasIndex(x => x.CustomerId).IsUnique().HasFilter("\"Status\" = 'Active'");
             entity.HasOne(x => x.Customer).WithMany(x => x.Carts)
                 .HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -312,6 +319,8 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
                 table.HasCheckConstraint("CK_Orders_Totals",
                     "\"Subtotal\" >= 0 AND \"DiscountTotal\" >= 0 AND \"DeliveryTotal\" >= 0 AND \"GrandTotal\" >= 0"));
             entity.Property(x => x.OrderNumber).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.CheckoutKey).HasMaxLength(100);
+            entity.Property(x => x.PromotionCode).HasMaxLength(80);
             entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(40);
             ConfigureMoney(entity.Property(x => x.Subtotal));
             ConfigureMoney(entity.Property(x => x.DiscountTotal));
@@ -319,6 +328,8 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
             ConfigureMoney(entity.Property(x => x.GrandTotal));
             entity.Property(x => x.Currency).HasMaxLength(3).IsFixedLength();
             entity.HasIndex(x => x.OrderNumber).IsUnique();
+            entity.HasIndex(x => new { x.CustomerId, x.CheckoutKey }).IsUnique()
+                .HasFilter("\"CheckoutKey\" IS NOT NULL");
             entity.HasIndex(x => new { x.CustomerId, x.CreatedAt });
             entity.HasOne(x => x.Customer).WithMany(x => x.Orders)
                 .HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
@@ -400,6 +411,7 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
             entity.ToTable("PaymentRecords", table =>
                 table.HasCheckConstraint("CK_PaymentRecords_Amount", "\"Amount\" >= 0"));
             entity.Property(x => x.Provider).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.PaymentKey).HasMaxLength(100);
             entity.Property(x => x.ProviderReference).HasMaxLength(160);
             entity.Property(x => x.PaymentMethodType).HasMaxLength(80).IsRequired();
             entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(40);
@@ -408,8 +420,24 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
             entity.Property(x => x.FailureReason).HasMaxLength(500);
             entity.HasIndex(x => new { x.Provider, x.ProviderReference })
                 .IsUnique().HasFilter("\"ProviderReference\" IS NOT NULL");
+            entity.HasIndex(x => new { x.OrderId, x.PaymentKey })
+                .IsUnique().HasFilter("\"PaymentKey\" IS NOT NULL");
             entity.HasOne(x => x.Order).WithMany(x => x.Payments)
                 .HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PaymentProviderEvent>(entity =>
+        {
+            entity.ToTable("PaymentProviderEvents");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedOnAdd();
+            entity.Property(x => x.Provider).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.EventId).HasMaxLength(160).IsRequired();
+            entity.Property(x => x.EventType).HasMaxLength(40).IsRequired();
+            entity.Property(x => x.ReceivedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasIndex(x => new { x.Provider, x.EventId }).IsUnique();
+            entity.HasOne(x => x.PaymentRecord).WithMany(x => x.ProviderEvents)
+                .HasForeignKey(x => x.PaymentRecordId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Shipment>(entity =>
@@ -562,12 +590,12 @@ internal static class RoleSeeds
 {
     public static readonly IdentityRole<Guid>[] All =
     [
-        Create("11111111-1111-1111-1111-111111111111", "Customer"),
-        Create("22222222-2222-2222-2222-222222222222", "Seller"),
-        Create("33333333-3333-3333-3333-333333333333", "ProductAdministrator"),
-        Create("44444444-4444-4444-4444-444444444444", "FulfilmentEmployee"),
-        Create("55555555-5555-5555-5555-555555555555", "BusinessManager"),
-        Create("66666666-6666-6666-6666-666666666666", "SystemAdministrator")
+        Create("11111111-1111-1111-1111-111111111111", AppRoles.Customer),
+        Create("22222222-2222-2222-2222-222222222222", AppRoles.Seller),
+        Create("33333333-3333-3333-3333-333333333333", AppRoles.ProductAdministrator),
+        Create("44444444-4444-4444-4444-444444444444", AppRoles.FulfilmentEmployee),
+        Create("55555555-5555-5555-5555-555555555555", AppRoles.BusinessManager),
+        Create("66666666-6666-6666-6666-666666666666", AppRoles.SystemAdministrator)
     ];
 
     private static IdentityRole<Guid> Create(string id, string name) => new()

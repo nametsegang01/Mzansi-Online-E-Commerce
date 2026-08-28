@@ -19,9 +19,10 @@
 | `identity.UserLogins` | login provider/key/display name, user | composite PK; user FK | External logins |
 | `identity.UserTokens` | user/provider/name/value | composite PK; user FK | Identity tokens—not payment-card data |
 | `identity.RoleClaims` | role and claim fields | integer PK; role FK | Role claims |
+| `identity.DataProtectionKeys` | `Id`; `FriendlyName?`; serialized key XML | integer PK | Shared ASP.NET Core data-protection key ring so opaque access/refresh tokens survive API restarts and deployments |
 | `marketplace.CustomerProfiles` | `UserId`; `FirstName`; `LastName`; `MobileNumber?`; timestamps | `UserId PK/FK` | Customer-specific profile |
 | `marketplace.SellerProfiles` | `UserId`; `TradingName`; `RegistrationNumber?`; `TaxNumber?`; `Status`; `CommissionRate`; `ApprovedAt?`; timestamps | `UserId PK/FK`; commission 0..1 | Seller onboarding and commercial terms |
-| `marketplace.Addresses` | common fields; `UserId`; `Type`; recipient and postal fields; `CountryCode`; `IsDefault` | user FK; `(UserId,IsDefault)` index | Reusable customer/seller address book |
+| `marketplace.Addresses` | common fields; `UserId`; `Type`; recipient and postal fields; `CountryCode`; `IsDefault` | user FK; `(UserId,IsDefault)` index; one default per user enforced by a partial UQ index | Reusable customer/seller address book |
 | `audit.AuditEntries` | `Id bigint`; `UserId?`; `EntityType`; `EntityId`; `Action`; `ChangesJson jsonb?`; `CorrelationId?`; `OccurredAt` | identity PK; optional user FK; entity/time indexes | Security and business audit trail |
 
 ## Seller catalogue and stock
@@ -40,14 +41,15 @@
 
 | Table | Fields | Keys and rules | Purpose |
 |---|---|---|---|
-| `marketplace.Carts` | common fields; `CustomerId`; `Status`; `ExpiresAt?` | customer FK; customer/status index | Customer basket lifecycle |
+| `marketplace.Carts` | common fields; `CustomerId`; `Status`; `ExpiresAt?` | customer FK; customer/status index; one active cart per customer enforced by a partial UQ index | Customer basket lifecycle |
 | `marketplace.CartItems` | common fields; `CartId`; `ProductId`; `Quantity` | cart/product FKs; pair UQ; quantity > 0 | Basket line |
-| `marketplace.Orders` | common fields; `OrderNumber`; `CustomerId`; `Status`; `Subtotal`; `DiscountTotal`; `DeliveryTotal`; `GrandTotal`; `Currency`; `PlacedAt?`; `PaidAt?` | order number UQ; customer FK; all totals >= 0 | Platform-wide customer order |
+| `marketplace.Orders` | common fields; `OrderNumber`; `CheckoutKey?`; `PromotionCode?`; `CustomerId`; `Status`; `Subtotal`; `DiscountTotal`; `DeliveryTotal`; `GrandTotal`; `Currency`; `PlacedAt?`; `PaidAt?` | order number UQ; `(CustomerId,CheckoutKey)` UQ when key present; customer FK; all totals >= 0 | Platform-wide customer order with replay-safe checkout identity |
 | `marketplace.OrderAddresses` | `OrderId`; recipient and postal snapshot fields; `CountryCode` | order PK/FK | Immutable delivery-address snapshot |
 | `marketplace.SellerOrders` | common fields; `OrderId`; `SellerId`; `StoreId`; `Status`; subtotal/discount/delivery/commission/net | order/seller/store FKs; `(OrderId,StoreId)` UQ; amounts >= 0 | Seller-isolated fulfilment and settlement partition |
 | `marketplace.OrderItems` | common fields; `SellerOrderId`; `ProductId`; `SkuSnapshot`; `ProductNameSnapshot`; `Quantity`; price/discount/line total | seller-order/product FKs; quantity > 0; amounts >= 0 | Historical purchased line |
 | `marketplace.StockReservations` | common fields; `OrderItemId`; `ProductId`; `Quantity`; `Status`; `ExpiresAt`; `ReleasedAt?` | order item UQ/FK; inventory FK; quantity > 0; lifecycle index | Temporary checkout stock hold |
-| `marketplace.PaymentRecords` | common fields; `OrderId`; `Provider`; `ProviderReference?`; `PaymentMethodType`; `Status`; `Amount`; `Currency`; `FailureReason?`; `PaidAt?` | order FK; provider/reference UQ when present; amount >= 0 | Sandbox/provider payment outcome; no PAN/CVV |
+| `marketplace.PaymentRecords` | common fields; `OrderId`; `PaymentKey?`; `Provider`; `ProviderReference?`; `PaymentMethodType`; `Status`; `Amount`; `Currency`; `FailureReason?`; `PaidAt?` | order FK; provider/reference UQ when present; `(OrderId,PaymentKey)` UQ when key present; amount >= 0 | Sandbox/provider payment outcome; no PAN/CVV |
+| `marketplace.PaymentProviderEvents` | `Id`; `PaymentRecordId`; `Provider`; `EventId`; `EventType`; `ReceivedAt` | payment FK; `(Provider,EventId)` UQ | Minimal duplicate-safe payment callback receipt; no provider payload or card data |
 | `marketplace.Shipments` | common fields; `SellerOrderId`; `Status`; `Carrier?`; `TrackingNumber?`; `DispatchedAt?`; `DeliveredAt?` | seller-order FK; carrier/tracking UQ when present | Pick, pack, dispatch, delivery lifecycle |
 
 ## Returns, promotions, and seller settlement
