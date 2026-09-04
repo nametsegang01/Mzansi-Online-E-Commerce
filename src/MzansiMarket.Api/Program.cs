@@ -117,6 +117,7 @@ app.MapCartEndpoints();
 app.MapCheckoutEndpoints();
 app.MapPaymentEndpoints();
 app.MapFulfilmentEndpoints();
+app.MapSellerCatalogueEndpoints();
 
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 {

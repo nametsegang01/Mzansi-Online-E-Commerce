@@ -6,9 +6,11 @@
 - PostgreSQL version: 18
 - Region and plan: Frankfurt, Free
 - Applied migrations: initial schema plus DATA-002 through DATA-004, ending at `20260828065853_AddSandboxPaymentEvents`
+- Pending release migration: DATA-005 (`20260904064645_SeedMarketplaceCategories`) seeds six stable reseller product categories without destructive schema changes
 - Application schemas: `identity`, `marketplace`, `audit`
 - Application tables: 33, plus `public.__EFMigrationsHistory`
 - Seeded roles: Customer, Seller, ProductAdministrator, FulfilmentEmployee, BusinessManager, SystemAdministrator
+- Seeded categories after DATA-005: Home & living, Fashion, Beauty, Food & pantry, Art & craft, Electronics
 - Check constraints: 20
 - Application-schema indexes: 80, including primary-key and unique-constraint indexes
 - Forbidden PAN/CVV-style columns: 0

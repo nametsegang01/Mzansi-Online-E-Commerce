@@ -125,7 +125,12 @@ public sealed class CatalogueApiTests(ApiFactory factory) : IClassFixture<ApiFac
             Slug = "suspended-seller",
             Status = StoreStatus.Suspended
         };
-        var homeCategory = new Category { Name = "Home & living", Slug = "home-living", IsActive = true };
+        var homeCategory = await dbContext.Categories.SingleOrDefaultAsync(category => category.Slug == "home-living");
+        if (homeCategory is null)
+        {
+            homeCategory = new Category { Name = "Home & living", Slug = "home-living", IsActive = true };
+            dbContext.Categories.Add(homeCategory);
+        }
         var hiddenCategory = new Category { Name = "Hidden", Slug = "hidden-category", IsActive = false };
         var basket = CreateProduct(activeStore, "TEST-BASKET", "Handwoven Storage Basket",
             "handwoven-storage-basket", 420m, ProductStatus.Active, 10, 2);
@@ -161,7 +166,7 @@ public sealed class CatalogueApiTests(ApiFactory factory) : IClassFixture<ApiFac
             "suspended-product", 80m, ProductStatus.Active, 5, 0);
         suspendedProduct.Categories.Add(new ProductCategory { Product = suspendedProduct, Category = homeCategory });
 
-        dbContext.AddRange(activeStore, suspendedStore, homeCategory, hiddenCategory,
+        dbContext.AddRange(activeStore, suspendedStore, hiddenCategory,
             basket, mug, draft, inactiveCategoryProduct, suspendedProduct);
         await dbContext.SaveChangesAsync();
 

@@ -4,7 +4,7 @@
 
 - Objective: implement the complete Mzansi Market Online application API from the approved assignment baseline.
 - Platform: ASP.NET Core on .NET 10, Entity Framework Core, PostgreSQL 18, and Render.
-- Current phase: transactional commerce.
+- Current phase: reseller catalogue and administration.
 - Safety boundary: use fictional users and sandbox payment references only; never collect or store card numbers, CVV values, identity numbers, or confidential business data.
 
 ## Architecture and decisions
@@ -125,11 +125,26 @@
 - Implemented filtered work queues, approved-seller ownership enforcement, controlled picking/packing/dispatch/delivery, shipment tracking, aggregate order status updates, and audit evidence.
 - Validation: full suite passes 23/23 tests; cross-seller access, invalid transitions, required dispatch data, shipment lifecycle, aggregate status, and audit persistence are covered.
 
+### BE-008A Reseller catalogue and approval
+
+- Acceptance criteria:
+  - Active reseller accounts can manage their own store profile and prepare draft products while approval is pending.
+  - Product creation and editing enforce unique SKU/store slug, positive ZAR pricing, active categories, public HTTPS image URLs, and accessible image descriptions.
+  - Stock adjustments cannot reduce on-hand quantity below customer reservations and append inventory transaction evidence.
+  - Cross-seller reads, edits, inventory changes, publication, and archival return no owned resource.
+  - A system administrator can approve, reject, or suspend a reseller; approval activates the store.
+  - Only approved resellers with active stores can publish products, and published products immediately satisfy the existing public-catalogue visibility rules.
+
+- Status: PASS locally; awaiting Render release.
+- Implemented pending-reseller workspace authorization, owned store/product CRUD, external-image metadata, inventory adjustments, soft archival, publish/unpublish controls, administrator decisions, and audit records.
+- Added DATA-005 (`20260904064645_SeedMarketplaceCategories`) with six deterministic marketplace categories so a fresh deployment can accept reseller products.
+- Validation: full API suite passes 27/27; release build has zero warnings/errors; EF reports no pending model changes.
+
 ## Known limitations and pending decisions
 
 - Email delivery, confirmation links, password-reset delivery, and optional MFA depend on the notification work unit. They are not to be falsely represented as active until a sandbox notification adapter exists.
 - The current Render Free PostgreSQL database expires and has no retained backups; it is not suitable for real users or production transactions.
-- Product image object storage and the sandbox payment provider remain unselected implementation dependencies.
+- Direct product-image upload storage and the sandbox payment provider remain unselected implementation dependencies. Resellers can currently attach public HTTPS image URLs with required alt text.
 - Database persistence protects key-ring availability, not key confidentiality by itself. Before a real production launch, wrap data-protection keys with an approved certificate or external key-encryption mechanism and verify restoration.
 
 ## Render release checkpoint
@@ -145,4 +160,4 @@
 
 ## Next ready action
 
-- Begin `BE-007 Cancellation, returns, and refunds`, including quantity/eligibility rules and sandbox refund evidence.
+- Release BE-008A and DATA-005 to Render, then implement the remaining BE-008 staff category/promotion/role administration or resume BE-007 cancellations, returns, and refunds.

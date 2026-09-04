@@ -4,7 +4,7 @@
 
 - Objective: deliver one responsive marketplace web application for customer and seller accounts.
 - Application: `src/MzansiMarket.CustomerWeb`.
-- Current phase: live API integration through backend work unit BE-006.
+- Current phase: reseller catalogue integration through backend work unit BE-008A.
 - Production API default: `https://mzansi-market-api.onrender.com`.
 
 ## Architecture and decisions
@@ -33,22 +33,24 @@
    - Auth-gated cart add, quantity update, removal, current server totals, address selection, promotion input, idempotent checkout, order reservation summary, and sandbox payment initiation.
    - The browser never collects card numbers or provider secrets. Payment completion remains a server/provider event.
 
-4. `FE-004 Seller onboarding and fulfilment` — PASS against available APIs
-   - Full seller application, pending/draft status journey, approved-store authorization boundary, fulfilment queue, picking, packing, dispatch with carrier/tracking, and delivery transition.
-   - Clear dependency cards identify unavailable seller catalogue, store administration, and analytics capabilities.
+4. `FE-004 Reseller studio` — PASS locally; awaiting Render release
+   - Full reseller application, pending/draft preparation, approval visibility, and active-store publication boundary.
+   - Store profile editing; product create/edit/archive; categories; public HTTPS image and alt-text metadata; price; stock and reorder-level adjustments; publish/unpublish; and customer-catalogue visibility.
+   - Existing fulfilment queue remains integrated for picking, packing, dispatch with carrier/tracking, and delivery transition.
+   - Desktop and mobile reseller workspace navigation uses Products, Orders, and Store settings with responsive product cards and focus-contained task sheets.
 
 5. `FE-005 Quality checkpoint` — PASS locally
    - Production TypeScript/Vite build passes.
-   - Vitest interaction suite passes 4/4.
+   - Vitest interaction suite passes 6/6, including reseller draft creation and publication.
    - Desktop browser inspection confirms the storefront and authentication sheet render without console warnings.
    - Mobile DOM inspection at 390×844 confirms document width remains within the viewport.
 
 ## Backend dependencies that prevent a truthful “entire system” frontend
 
 - `BE-007`: cancellations, returns, refunds, customer order history, and refund status endpoints.
-- `BE-008`: seller approval, store editing/publishing, product/category/image/price/stock/promotion administration, and staff role endpoints.
+- Remaining `BE-008`: staff category/promotion/role administration and direct object-storage image uploads. Reseller approval, store editing, owned product/image metadata/price/stock management, and publication are implemented in BE-008A.
 - `BE-009`: customer order tracking history, seller sales/stock/performance reporting, audit access, and export endpoints.
-- Product administration or release seed data is needed before the live production catalogue can show sellable products. The current Render catalogue returns zero products.
+- DATA-005 supplies the base categories. The production catalogue will remain empty until an approved reseller publishes its first product.
 - The sandbox payment initiation endpoint creates a pending provider reference. Only the protected server event endpoint can complete it; the frontend correctly does not receive that secret.
 
 ## Release configuration
@@ -64,7 +66,7 @@
 
 ## Next dependency-ordered work
 
-1. Implement BE-007 through BE-009 and their authorization tests.
-2. Add the corresponding customer orders/returns and seller catalogue/reporting screens.
-3. Seed or administer fictional catalogue inventory for end-to-end demonstration.
+1. Deploy BE-008A, DATA-005, and the reseller studio, then verify the public workflow.
+2. Implement BE-007, the remaining BE-008 staff tools, and BE-009 with authorization tests.
+3. Add customer orders/returns and reseller reporting screens plus direct object-storage image upload.
 4. Run the cross-system BE-010 release checkpoint, including authenticated browser journeys and accessibility/performance auditing.

@@ -216,6 +216,7 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
             entity.HasIndex(x => x.Slug).IsUnique();
             entity.HasOne(x => x.ParentCategory).WithMany(x => x.Children)
                 .HasForeignKey(x => x.ParentCategoryId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasData(CategorySeeds.All);
         });
 
         modelBuilder.Entity<Product>(entity =>
@@ -604,5 +605,30 @@ internal static class RoleSeeds
         Name = name,
         NormalizedName = name.ToUpperInvariant(),
         ConcurrencyStamp = $"role-{name.ToLowerInvariant()}-v1"
+    };
+}
+
+internal static class CategorySeeds
+{
+    private static readonly DateTimeOffset SeededAt = new(2026, 8, 28, 0, 0, 0, TimeSpan.Zero);
+
+    public static readonly Category[] All =
+    [
+        Create("71111111-1111-1111-1111-111111111111", "Home & living", "home-living"),
+        Create("72222222-2222-2222-2222-222222222222", "Fashion", "fashion"),
+        Create("73333333-3333-3333-3333-333333333333", "Beauty", "beauty"),
+        Create("74444444-4444-4444-4444-444444444444", "Food & pantry", "food-pantry"),
+        Create("75555555-5555-5555-5555-555555555555", "Art & craft", "art-craft"),
+        Create("76666666-6666-6666-6666-666666666666", "Electronics", "electronics")
+    ];
+
+    private static Category Create(string id, string name, string slug) => new()
+    {
+        Id = Guid.Parse(id),
+        Name = name,
+        Slug = slug,
+        IsActive = true,
+        CreatedAt = SeededAt,
+        UpdatedAt = SeededAt
     };
 }

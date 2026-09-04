@@ -10,6 +10,9 @@ import type {
   PagedProducts,
   Payment,
   RegistrationResponse,
+  SellerProduct,
+  SellerProductInput,
+  SellerStore,
   TokenResponse,
 } from './types'
 
@@ -127,4 +130,13 @@ export const api = {
   pay: (orderId: string, paymentMethodType: string) => request<Payment>(`/api/orders/${orderId}/payments/sandbox`, { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify({ paymentMethodType }) }),
   fulfilment: (status = '') => request<FulfilmentOrder[]>(`/api/fulfilment/orders${status ? `?status=${encodeURIComponent(status)}` : ''}`),
   transition: (id: string, body: { action: string; carrier?: string; trackingNumber?: string }) => request<FulfilmentOrder>(`/api/fulfilment/orders/${id}/transition`, { method: 'POST', body: JSON.stringify(body) }),
+  sellerStore: () => request<SellerStore>('/api/seller/store'),
+  updateSellerStore: (body: { name: string; description: string | null; supportEmail: string | null }) => request<SellerStore>('/api/seller/store', { method: 'PUT', body: JSON.stringify(body) }),
+  sellerProducts: () => request<SellerProduct[]>('/api/seller/products'),
+  createSellerProduct: (body: SellerProductInput) => request<SellerProduct>('/api/seller/products', { method: 'POST', body: JSON.stringify(body) }),
+  updateSellerProduct: (id: string, body: SellerProductInput) => request<SellerProduct>(`/api/seller/products/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  updateSellerInventory: (id: string, body: { onHandQuantity: number; reorderLevel: number; reason: string }) => request<SellerProduct>(`/api/seller/products/${id}/inventory`, { method: 'PUT', body: JSON.stringify(body) }),
+  publishSellerProduct: (id: string) => request<SellerProduct>(`/api/seller/products/${id}/publish`, { method: 'POST' }),
+  unpublishSellerProduct: (id: string) => request<SellerProduct>(`/api/seller/products/${id}/unpublish`, { method: 'POST' }),
+  deleteSellerProduct: (id: string) => request<void>(`/api/seller/products/${id}`, { method: 'DELETE' }),
 }

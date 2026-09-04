@@ -6,6 +6,7 @@ public static class AuthorizationPolicies
 {
     public const string ActiveAccount = "ActiveAccount";
     public const string ApprovedSeller = "ApprovedSeller";
+    public const string SellerWorkspace = "SellerWorkspace";
     public const string CustomerAccess = "CustomerAccess";
     public const string CatalogueManagement = "CatalogueManagement";
     public const string Fulfilment = "Fulfilment";
@@ -24,6 +25,10 @@ public static class AuthorizationPolicies
         options.AddPolicy(ApprovedSeller, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(new ActiveAccountRequirement(), new ApprovedSellerRequirement()));
+        options.AddPolicy(SellerWorkspace, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new ActiveAccountRequirement())
+            .RequireRole(AppRoles.Seller));
         options.AddPolicy(CustomerAccess, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(new ActiveAccountRequirement())

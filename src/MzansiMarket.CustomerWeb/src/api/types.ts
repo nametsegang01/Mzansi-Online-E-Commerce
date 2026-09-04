@@ -164,6 +164,49 @@ export type FulfilmentOrder = {
   }
 }
 
+export type SellerStore = {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  supportEmail: string | null
+  storeStatus: string
+  sellerStatus: string
+  canPublish: boolean
+}
+
+export type SellerProduct = {
+  id: string
+  sku: string
+  name: string
+  slug: string
+  description: string | null
+  price: number
+  currency: string
+  status: string
+  onHandQuantity: number
+  reservedQuantity: number
+  availableQuantity: number
+  reorderLevel: number
+  categories: Array<{ id: string; name: string; slug: string }>
+  imageUrl: string | null
+  imageAltText: string | null
+  updatedAt: string
+}
+
+export type SellerProductInput = {
+  sku: string
+  name: string
+  slug: string
+  description: string | null
+  price: number
+  categoryIds: string[]
+  imageUrl: string | null
+  imageAltText: string | null
+  initialStock: number
+  reorderLevel: number
+}
+
 export type ApiProblem = {
   title?: string
   detail?: string
