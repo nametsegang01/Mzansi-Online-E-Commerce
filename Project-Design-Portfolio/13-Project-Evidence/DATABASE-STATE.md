@@ -5,8 +5,8 @@
 - Render database: `mzansi-market-db`
 - PostgreSQL version: 18
 - Region and plan: Frankfurt, Free
-- Applied migrations: initial schema plus DATA-002 through DATA-004, ending at `20260828065853_AddSandboxPaymentEvents`
-- Pending release migration: DATA-005 (`20260904064645_SeedMarketplaceCategories`) seeds six stable reseller product categories without destructive schema changes
+- Applied migrations: initial schema plus DATA-002 through DATA-005, ending at `20260904064645_SeedMarketplaceCategories`
+- DATA-005 seeds six stable reseller product categories without destructive schema changes
 - Application schemas: `identity`, `marketplace`, `audit`
 - Application tables: 33, plus `public.__EFMigrationsHistory`
 - Seeded roles: Customer, Seller, ProductAdministrator, FulfilmentEmployee, BusinessManager, SystemAdministrator
@@ -28,6 +28,7 @@
 - Generated idempotent SQL contains no `DROP`, `TRUNCATE`, or `DELETE` statements.
 - Live queries verified schema counts, migration history, role seeds, constraints, indexes, and payment-data boundaries.
 - API startup logs verified each additive migration and reported the database current; `/health/database` returns 200 publicly.
+- Public category retrieval returned all six DATA-005 seeds after deployment.
 
 ## Operational limitation
 

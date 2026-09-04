@@ -135,7 +135,7 @@
   - A system administrator can approve, reject, or suspend a reseller; approval activates the store.
   - Only approved resellers with active stores can publish products, and published products immediately satisfy the existing public-catalogue visibility rules.
 
-- Status: PASS locally; awaiting Render release.
+- Status: PASS locally and deployed on Render.
 - Implemented pending-reseller workspace authorization, owned store/product CRUD, external-image metadata, inventory adjustments, soft archival, publish/unpublish controls, administrator decisions, and audit records.
 - Added DATA-005 (`20260904064645_SeedMarketplaceCategories`) with six deterministic marketplace categories so a fresh deployment can accept reseller products.
 - Validation: full API suite passes 27/27; release build has zero warnings/errors; EF reports no pending model changes.
@@ -151,13 +151,15 @@
 
 - Service: `mzansi-market-api` (`srv-da8lb75g1s2s739oncb0`), Docker, Frankfurt, Free.
 - Public URL: `https://mzansi-market-api.onrender.com`.
-- Source release: commit `efe85d2` on `main` (includes the clean Npgsql/GSS container runtime dependency).
+- Source release: commit `bd59c46` on `main` (`Build reseller catalogue and storefront publishing`).
 - Environment: private `DATABASE_URL`, Production environment, controlled startup migrations, deployed-frontend-only CORS, authentication rate limiting, and a generated sandbox webhook secret.
-- Database: DATA-002 through DATA-004 applied successfully at startup; Render logs report the database migrations are current.
+- Database: DATA-002 through DATA-005 applied successfully at startup; Render logs explicitly record `20260904064645_SeedMarketplaceCategories` and report migrations current.
 - Platform health check: `/health/database`.
 - Public verification: health 200/Healthy; customer registration 201; login and refresh issue opaque tokens; `/api/auth/me` returns the matching fictional customer and Customer role; invalid password returns 401; the customer frontend origin is allowed and an untrusted origin receives no CORS allow header.
+- Reseller verification: six public categories; pending registration; draft store; authenticated draft product creation; pending products excluded from the customer catalogue; draft archived after the check; unauthenticated seller store access returns 401.
+- API deploy `dep-dad6ltoae00c73djg1q0` reached `live`; post-deploy error-log scan returned no errors.
 - Free-tier limitation: cold starts can delay the first request after inactivity, and the database remains temporary development infrastructure.
 
 ## Next ready action
 
-- Release BE-008A and DATA-005 to Render, then implement the remaining BE-008 staff category/promotion/role administration or resume BE-007 cancellations, returns, and refunds.
+- Implement the remaining BE-008 staff category/promotion/role administration or resume BE-007 cancellations, returns, and refunds.

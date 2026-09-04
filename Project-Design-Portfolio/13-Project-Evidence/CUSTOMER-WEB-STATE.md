@@ -33,7 +33,7 @@
    - Auth-gated cart add, quantity update, removal, current server totals, address selection, promotion input, idempotent checkout, order reservation summary, and sandbox payment initiation.
    - The browser never collects card numbers or provider secrets. Payment completion remains a server/provider event.
 
-4. `FE-004 Reseller studio` — PASS locally; awaiting Render release
+4. `FE-004 Reseller studio` — PASS locally and deployed on Render
    - Full reseller application, pending/draft preparation, approval visibility, and active-store publication boundary.
    - Store profile editing; product create/edit/archive; categories; public HTTPS image and alt-text metadata; price; stock and reorder-level adjustments; publish/unpublish; and customer-catalogue visibility.
    - Existing fulfilment queue remains integrated for picking, packing, dispatch with carrier/tracking, and delivery transition.
@@ -63,10 +63,11 @@
 - Live source release: `bd9a58b` (`Integrate customer and seller web journeys`).
 - Render deploy: `dep-da8ne8qjnfac73dsk7lg`, status `live` on 2026-08-28.
 - CDN verification: root HTTP request succeeded and the deployed JavaScript bundle contains the seller-studio and live-stock application paths.
+- Reseller release: source `bd59c46`, Render deploy `dep-dad6ltoae00c73djg1vg`, status `live` on 2026-09-04.
+- Reseller CDN verification: deployed bundle contains `Reseller studio` and `Create draft product`; post-deploy error-log scan returned no errors.
 
 ## Next dependency-ordered work
 
-1. Deploy BE-008A, DATA-005, and the reseller studio, then verify the public workflow.
-2. Implement BE-007, the remaining BE-008 staff tools, and BE-009 with authorization tests.
-3. Add customer orders/returns and reseller reporting screens plus direct object-storage image upload.
-4. Run the cross-system BE-010 release checkpoint, including authenticated browser journeys and accessibility/performance auditing.
+1. Implement BE-007, the remaining BE-008 staff tools, and BE-009 with authorization tests.
+2. Add customer orders/returns and reseller reporting screens plus direct object-storage image upload.
+3. Run the cross-system BE-010 release checkpoint, including authenticated browser journeys and accessibility/performance auditing.
