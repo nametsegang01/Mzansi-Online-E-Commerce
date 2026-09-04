@@ -53,6 +53,7 @@ describe('integrated marketplace frontend', () => {
     await user.click(screen.getByRole('button', { name: /sell on mzansi/i }))
     expect(screen.getByRole('dialog', { name: 'Open your seller studio' })).toBeInTheDocument()
     expect(screen.getByLabelText('Trading name')).toBeInTheDocument()
+    expect(screen.getByLabelText('Store address')).not.toHaveAttribute('pattern')
     expect(screen.getByText(/seller accounts start as pending/i)).toBeInTheDocument()
   })
 })

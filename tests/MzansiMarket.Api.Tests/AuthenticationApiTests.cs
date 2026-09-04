@@ -155,7 +155,8 @@ public sealed class AuthenticationApiTests(ApiFactory factory) : IClassFixture<A
         using var client = factory.CreateApiClient();
         var suffix = Guid.NewGuid().ToString("N");
         var email = $"seller-{suffix}@example.test";
-        var storeSlug = $"ubuntu-goods-{suffix}";
+        var storeAddress = $"Ubuntu Goods, Shop 12 / {suffix}";
+        var expectedStoreSlug = $"ubuntu-goods-shop-12-{suffix}";
 
         var registration = await client.PostAsJsonAsync("/api/auth/register/seller", new
         {
@@ -166,7 +167,7 @@ public sealed class AuthenticationApiTests(ApiFactory factory) : IClassFixture<A
             mobileNumber = "+27 72 000 0000",
             tradingName = "Ubuntu Goods",
             registrationNumber = "FICTIONAL-001",
-            storeSlug,
+            storeSlug = storeAddress,
             supportEmail = email
         });
 
@@ -200,7 +201,7 @@ public sealed class AuthenticationApiTests(ApiFactory factory) : IClassFixture<A
         Assert.NotNull(seller);
         Assert.Equal(SellerStatus.Pending, seller.Status);
         Assert.Equal(StoreStatus.Draft, store.Status);
-        Assert.Equal(storeSlug, store.Slug);
+        Assert.Equal(expectedStoreSlug, store.Slug);
 
         seller.Status = SellerStatus.Approved;
         store.Status = StoreStatus.Active;

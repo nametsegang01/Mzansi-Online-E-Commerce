@@ -43,7 +43,7 @@ public sealed class SellerRegistrationRequest
     [StringLength(80)]
     public string? RegistrationNumber { get; init; }
 
-    [Required, RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$"), StringLength(180, MinimumLength = 2)]
+    [Required, StringLength(180, MinimumLength = 2)]
     public string StoreSlug { get; init; } = string.Empty;
 
     [EmailAddress, StringLength(256)]

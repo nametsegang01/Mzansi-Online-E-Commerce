@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
 using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Contracts;
 using MzansiMarket.Api.Data;
@@ -112,7 +113,15 @@ public static class AuthEndpoints
             return Results.ValidationProblem(errors);
         }
 
-        var storeSlug = request.StoreSlug.Trim().ToLowerInvariant();
+        var storeSlug = CreateStoreSlug(request.StoreSlug);
+        if (string.IsNullOrEmpty(storeSlug))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["StoreSlug"] = ["Enter a store address containing at least one letter or number."]
+            });
+        }
+
         if (await dbContext.Stores.IgnoreQueryFilters().AnyAsync(store => store.Slug == storeSlug, cancellationToken))
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
@@ -367,4 +376,7 @@ public static class AuthEndpoints
 
     private static string? NullIfWhiteSpace(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string CreateStoreSlug(string value) =>
+        Regex.Replace(value.Trim().ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
 }
