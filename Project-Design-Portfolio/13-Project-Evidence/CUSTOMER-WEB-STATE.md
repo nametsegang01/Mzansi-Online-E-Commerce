@@ -52,6 +52,13 @@
    - Approve, reject, and suspend actions update the API-backed review queue with immediate, accessible feedback.
    - Customer product cards, search, cart, product details, and checkout no longer expose reseller or store identity and present Mzansi Market as the single retailer.
 
+7. `FE-007 Soft interface refinement` — PASS locally
+   - Consolidated the shared customer, reseller, and administrator presentation into a restrained warm-ivory, charcoal-green, and muted-gold visual system.
+   - Reduced card elevation and hover travel, simplified category controls, softened form focus treatment, and made navigation and transactional surfaces more consistent.
+   - Added subtle view-entry and direct press feedback, spatially consistent desktop side sheets and mobile bottom sheets, plus touch-device hover suppression.
+   - Preserved explicit focus indicators and reduced-motion, reduced-transparency, increased-contrast, and forced-colour fallbacks.
+   - Validation: all 9 frontend interaction tests pass and the TypeScript/Vite production build succeeds.
+
 ## Backend dependencies that prevent a truthful “entire system” frontend
 
 - `BE-007`: cancellations, returns, refunds, customer order history, and refund status endpoints.
