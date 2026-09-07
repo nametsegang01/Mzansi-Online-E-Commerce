@@ -80,6 +80,11 @@ textarea:focus-visible {
 .account-chip { min-height:2.75rem;padding:.25rem .75rem .25rem .3rem;display:flex;align-items:center;gap:.55rem;border:1px solid var(--line);border-radius:999px;background:var(--paper);cursor:pointer }
 .account-chip span,.avatar { display:grid;place-items:center;border-radius:50%;color:white;background:var(--pine-850);font-weight:750 }
 .account-chip span { width:2rem;height:2rem }.account-chip small{max-width:8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.account-panel { padding:.35rem 0 1.25rem;display:flex;align-items:center;gap:1rem;border-bottom:1px solid var(--line) }
+.account-panel .avatar { width:3.5rem;height:3.5rem;flex:0 0 auto;font-size:1.25rem }
+.account-panel__identity { min-width:0 }.account-panel__identity h3{margin:0;color:var(--pine-950);font-size:1.05rem}.account-panel__identity p{margin:.25rem 0 .65rem;overflow:hidden;color:var(--muted);font-size:.8rem;text-overflow:ellipsis;white-space:nowrap}
+.account-panel__links { padding:1.25rem 0;display:grid;gap:.65rem }.account-panel__links button{justify-content:flex-start}.account-panel__links svg{width:1.1rem}
+.account-logout { width:100%;min-height:3rem;padding:.7rem 1rem;display:flex;align-items:center;justify-content:center;gap:.5rem;border:1px solid rgb(160 63 69 / 24%);border-radius:.9rem;color:#90383e;background:#fff7f6;cursor:pointer;font-weight:750 }.account-logout:hover{background:#ffefed}.account-logout:disabled{opacity:.6;cursor:wait}.account-logout svg{width:1.1rem}
 .compact { min-height:2.65rem!important;padding:.55rem 1rem!important;font-size:.82rem }.full-width{width:100%}
 .catalogue-section { padding-block:clamp(4rem,8vw,7rem) }
 .catalogue-tools { margin-bottom:1rem;display:grid;grid-template-columns:minmax(260px,1fr) auto auto;align-items:end;gap:.8rem }
