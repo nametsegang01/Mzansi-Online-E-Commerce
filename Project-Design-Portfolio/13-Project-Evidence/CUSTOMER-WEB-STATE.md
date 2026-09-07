@@ -1,10 +1,10 @@
-# Customer and seller web implementation state
+# Customer, reseller, and administrator web implementation state
 
 ## Objective and phase
 
-- Objective: deliver one responsive marketplace web application for customer and seller accounts.
+- Objective: deliver one responsive marketplace web application for customer, reseller, and administrator accounts.
 - Application: `src/MzansiMarket.CustomerWeb`.
-- Current phase: reseller catalogue integration through backend work unit BE-008A.
+- Current phase: reseller administration and unified customer storefront through BE-008B.
 - Production API default: `https://mzansi-market-api.onrender.com`.
 
 ## Architecture and decisions
@@ -12,7 +12,8 @@
 - React 19, TypeScript 6, and Vite 8 remain the frontend foundation.
 - A typed API client now owns all HTTP contracts, bearer-session persistence, one-at-a-time token refresh, API problem parsing, and a bounded 30-second request timeout.
 - Authentication tokens are kept in session storage rather than long-lived local storage. Logout-all is exposed by the client for later account-security UI expansion.
-- One role-aware application shell serves customers and sellers. Seller registration also creates the customer profile required by the backend.
+- One role-aware application shell serves customers, resellers, and system administrators. Seller registration also creates the customer profile required by the backend.
+- Customer catalogue, product, cart, and checkout contracts intentionally omit reseller identity; store ownership remains private server-side operational data.
 - Product, stock, cart, price, promotion, delivery, checkout, payment, and fulfilment state comes only from the ASP.NET API. The former mock catalogue is no longer used by the application.
 - Translucency remains limited to navigation and modal layers. Content and transactional surfaces use opaque cards with clear focus treatment.
 - Sheets restore focus, close with Escape, contain keyboard focus, and lock background scrolling. Reduced-motion and reduced-transparency fallbacks remain active.
@@ -41,14 +42,20 @@
 
 5. `FE-005 Quality checkpoint` — PASS locally
    - Production TypeScript/Vite build passes.
-   - Vitest interaction suite passes 6/6, including reseller draft creation and publication.
+   - Vitest interaction suite passes 8/8, including reseller draft creation, publication, and administrator approval.
    - Desktop browser inspection confirms the storefront and authentication sheet render without console warnings.
    - Mobile DOM inspection at 390×844 confirms document width remains within the viewport.
+
+6. `FE-006 Administrator approvals and unified storefront` — PASS locally; awaiting Render release
+   - System administrators are routed to a protected reseller-review workspace after login.
+   - Pending, approved, rejected, and suspended application filters expose applicant, business, registration, and store-state details only to administrators.
+   - Approve, reject, and suspend actions update the API-backed review queue with immediate, accessible feedback.
+   - Customer product cards, search, cart, product details, and checkout no longer expose reseller or store identity and present Mzansi Market as the single retailer.
 
 ## Backend dependencies that prevent a truthful “entire system” frontend
 
 - `BE-007`: cancellations, returns, refunds, customer order history, and refund status endpoints.
-- Remaining `BE-008`: staff category/promotion/role administration and direct object-storage image uploads. Reseller approval, store editing, owned product/image metadata/price/stock management, and publication are implemented in BE-008A.
+- Remaining `BE-008`: staff category/promotion/role administration and direct object-storage image uploads. Reseller approval and its administrator frontend, store editing, owned product/image metadata/price/stock management, and publication are implemented.
 - `BE-009`: customer order tracking history, seller sales/stock/performance reporting, audit access, and export endpoints.
 - DATA-005 supplies the base categories. The production catalogue will remain empty until an approved reseller publishes its first product.
 - The sandbox payment initiation endpoint creates a pending provider reference. Only the protected server event endpoint can complete it; the frontend correctly does not receive that secret.

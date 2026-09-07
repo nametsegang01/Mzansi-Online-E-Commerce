@@ -246,7 +246,7 @@ public static class SellerCatalogueEndpoints
         p.Images.OrderByDescending(x => x.IsPrimary).ThenBy(x => x.SortOrder).Select(x => x.PublicUrl).FirstOrDefault(),
         p.Images.OrderByDescending(x => x.IsPrimary).ThenBy(x => x.SortOrder).Select(x => x.AltText).FirstOrDefault(), p.UpdatedAt);
     private static SellerApplicationResponse ToApplication(SellerProfile s) => new(s.UserId, s.User.DisplayName, s.User.Email!,
-        s.TradingName, s.Status.ToString(), s.Store!.Name, s.Store.Slug, s.Store.Status.ToString(), s.CreatedAt);
+        s.TradingName, s.RegistrationNumber, s.Status.ToString(), s.Store!.Name, s.Store.Slug, s.Store.Status.ToString(), s.CreatedAt);
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static void Audit(MarketplaceDbContext db, ClaimsPrincipal principal, Guid id, string action, HttpContext http, object changes) =>
         db.AuditEntries.Add(new AuditEntry

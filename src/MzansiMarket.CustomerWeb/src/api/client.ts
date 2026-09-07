@@ -12,6 +12,7 @@ import type {
   RegistrationResponse,
   SellerProduct,
   SellerProductInput,
+  SellerApplication,
   SellerStore,
   TokenResponse,
 } from './types'
@@ -139,4 +140,6 @@ export const api = {
   publishSellerProduct: (id: string) => request<SellerProduct>(`/api/seller/products/${id}/publish`, { method: 'POST' }),
   unpublishSellerProduct: (id: string) => request<SellerProduct>(`/api/seller/products/${id}/unpublish`, { method: 'POST' }),
   deleteSellerProduct: (id: string) => request<void>(`/api/seller/products/${id}`, { method: 'DELETE' }),
+  adminSellerApplications: () => request<SellerApplication[]>('/api/admin/sellers/applications'),
+  decideSellerApplication: (sellerId: string, action: 'Approve' | 'Reject' | 'Suspend') => request<SellerApplication>(`/api/admin/sellers/${sellerId}/decision`, { method: 'POST', body: JSON.stringify({ action }) }),
 }

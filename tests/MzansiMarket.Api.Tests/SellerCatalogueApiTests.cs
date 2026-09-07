@@ -40,11 +40,16 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
 
         Assert.Equal(HttpStatusCode.Conflict,
             (await sellerClient.PostAsync($"/api/seller/products/{productId}/publish", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await sellerClient.GetAsync("/api/admin/sellers/applications")).StatusCode);
         using var publicClient = factory.CreateApiClient();
         Assert.Equal(0, await PublicCountAsync(publicClient, seller.Suffix));
 
         var administrator = await CreateAdministratorAsync();
         using var adminClient = Client(administrator);
+        var applications = await adminClient.GetFromJsonAsync<JsonElement[]>("/api/admin/sellers/applications");
+        var application = Assert.Single(applications!, item => item.GetProperty("sellerId").GetGuid() == seller.UserId);
+        Assert.Equal("FICTIONAL-RESELLER", application.GetProperty("registrationNumber").GetString());
         var approval = await adminClient.PostAsJsonAsync($"/api/admin/sellers/{seller.UserId}/decision",
             new { action = "Approve" });
         Assert.Equal(HttpStatusCode.OK, approval.StatusCode);
@@ -150,6 +155,7 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
             firstName = "Lerato",
             lastName = "Mokoena",
             tradingName = $"Reseller {suffix}",
+            registrationNumber = "FICTIONAL-RESELLER",
             storeSlug = $"reseller-{suffix}",
             supportEmail = email
         });

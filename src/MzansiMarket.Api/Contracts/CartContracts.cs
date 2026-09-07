@@ -28,8 +28,6 @@ public sealed record CartItemResponse(
     Guid ProductId,
     string ProductName,
     string ProductSlug,
-    string StoreName,
-    string StoreSlug,
     int Quantity,
     decimal UnitPrice,
     decimal LineTotal,

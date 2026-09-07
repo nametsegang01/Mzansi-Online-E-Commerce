@@ -23,10 +23,6 @@ public static class CatalogueEndpoints
         group.MapGet("/products/{id:guid}", GetProductByIdAsync)
             .Produces<ProductDetailResponse>()
             .Produces(StatusCodes.Status404NotFound);
-        group.MapGet("/stores/{storeSlug}/products/{productSlug}", GetProductBySlugAsync)
-            .Produces<ProductDetailResponse>()
-            .Produces(StatusCodes.Status404NotFound);
-
         return endpoints;
     }
 
@@ -73,8 +69,7 @@ public static class CatalogueEndpoints
                 products = products.Where(product =>
                     EF.Functions.ILike(product.Name, pattern)
                     || EF.Functions.ILike(product.Sku, pattern)
-                    || product.Description != null && EF.Functions.ILike(product.Description, pattern)
-                    || EF.Functions.ILike(product.Store.Name, pattern));
+                    || product.Description != null && EF.Functions.ILike(product.Description, pattern));
             }
             else
             {
@@ -82,8 +77,7 @@ public static class CatalogueEndpoints
                 products = products.Where(product =>
                     product.Name.ToLower().Contains(normalized)
                     || product.Sku.ToLower().Contains(normalized)
-                    || product.Description != null && product.Description.ToLower().Contains(normalized)
-                    || product.Store.Name.ToLower().Contains(normalized));
+                    || product.Description != null && product.Description.ToLower().Contains(normalized));
             }
         }
 
@@ -92,12 +86,6 @@ public static class CatalogueEndpoints
         {
             products = products.Where(product => product.Categories.Any(link =>
                 link.Category.IsActive && link.Category.Slug == category));
-        }
-
-        var store = request.Store?.Trim().ToLowerInvariant();
-        if (!string.IsNullOrWhiteSpace(store))
-        {
-            products = products.Where(product => product.Store.Slug == store);
         }
 
         if (request.MinimumPrice is { } minimumPrice)
@@ -138,8 +126,6 @@ public static class CatalogueEndpoints
                 product.Currency,
                 product.Inventory.OnHandQuantity - product.Inventory.ReservedQuantity,
                 product.Inventory.OnHandQuantity > product.Inventory.ReservedQuantity,
-                product.Store.Name,
-                product.Store.Slug,
                 product.Images.OrderByDescending(image => image.IsPrimary).ThenBy(image => image.SortOrder)
                     .Select(image => image.PublicUrl).FirstOrDefault(),
                 product.Images.OrderByDescending(image => image.IsPrimary).ThenBy(image => image.SortOrder)
@@ -164,20 +150,6 @@ public static class CatalogueEndpoints
         return product is null ? Results.NotFound() : Results.Ok(product);
     }
 
-    private static async Task<IResult> GetProductBySlugAsync(
-        string storeSlug,
-        string productSlug,
-        MarketplaceDbContext dbContext,
-        CancellationToken cancellationToken)
-    {
-        var normalizedStoreSlug = storeSlug.Trim().ToLowerInvariant();
-        var normalizedProductSlug = productSlug.Trim().ToLowerInvariant();
-        var product = await ProjectDetails(ActiveProducts(dbContext).Where(item =>
-                item.Store.Slug == normalizedStoreSlug && item.Slug == normalizedProductSlug))
-            .SingleOrDefaultAsync(cancellationToken);
-        return product is null ? Results.NotFound() : Results.Ok(product);
-    }
-
     private static IQueryable<Product> ActiveProducts(MarketplaceDbContext dbContext) =>
         dbContext.Products.AsNoTracking().Where(product =>
             product.Status == ProductStatus.Active
@@ -195,7 +167,6 @@ public static class CatalogueEndpoints
             product.Currency,
             product.Inventory.OnHandQuantity - product.Inventory.ReservedQuantity,
             product.Inventory.OnHandQuantity > product.Inventory.ReservedQuantity,
-            new ProductStoreResponse(product.Store.Id, product.Store.Name, product.Store.Slug, product.Store.Description),
             product.Categories.Where(link => link.Category.IsActive)
                 .OrderBy(link => link.Category.Name)
                 .Select(link => new ProductCategoryResponse(link.Category.Id, link.Category.Name, link.Category.Slug))
@@ -223,7 +194,6 @@ public static class CatalogueEndpoints
 
         if (request.Search?.Length > 120) errors["Search"] = ["Search cannot exceed 120 characters."];
         if (request.Category?.Length > 140) errors["Category"] = ["Category cannot exceed 140 characters."];
-        if (request.Store?.Length > 180) errors["Store"] = ["Store cannot exceed 180 characters."];
         if (request.Sort is not null && !AllowedSorts.Contains(request.Sort))
         {
             errors["Sort"] = ["Sort must be newest, name, price-asc, or price-desc."];

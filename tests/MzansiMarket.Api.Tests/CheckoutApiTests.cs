@@ -43,7 +43,8 @@ public sealed class CheckoutApiTests(ApiFactory factory) : IClassFixture<ApiFact
         Assert.Equal(140m, body.RootElement.GetProperty("discountTotal").GetDecimal());
         Assert.Equal(75m, body.RootElement.GetProperty("deliveryTotal").GetDecimal());
         Assert.Equal(1335m, body.RootElement.GetProperty("grandTotal").GetDecimal());
-        Assert.Equal(2, body.RootElement.GetProperty("sellerOrders").GetArrayLength());
+        Assert.Equal(2, body.RootElement.GetProperty("items").GetArrayLength());
+        Assert.False(body.RootElement.TryGetProperty("sellerOrders", out _));
         Assert.Equal("1 Checkout Street",
             body.RootElement.GetProperty("shippingAddress").GetProperty("line1").GetString());
 

@@ -46,5 +46,5 @@ public sealed record SellerProductResponse(Guid Id, string Sku, string Name, str
     string? ImageUrl, string? ImageAltText, DateTimeOffset UpdatedAt);
 
 public sealed record SellerApplicationResponse(Guid SellerId, string DisplayName, string Email,
-    string TradingName, string SellerStatus, string StoreName, string StoreSlug, string StoreStatus,
+    string TradingName, string? RegistrationNumber, string SellerStatus, string StoreName, string StoreSlug, string StoreStatus,
     DateTimeOffset CreatedAt);

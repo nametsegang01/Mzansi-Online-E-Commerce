@@ -348,23 +348,17 @@ public static class CheckoutEndpoints
                 order.ShippingAddress.Province,
                 order.ShippingAddress.PostalCode,
                 order.ShippingAddress.CountryCode),
-            order.SellerOrders.OrderBy(candidate => candidate.Store.Name).Select(sellerOrder =>
-                new CheckoutSellerOrderResponse(
-                    sellerOrder.Id,
-                    sellerOrder.StoreId,
-                    sellerOrder.Store.Name,
-                    sellerOrder.Subtotal,
-                    sellerOrder.DiscountTotal,
-                    sellerOrder.DeliveryTotal,
-                    sellerOrder.Subtotal - sellerOrder.DiscountTotal + sellerOrder.DeliveryTotal,
-                    sellerOrder.Items.Select(item => new CheckoutItemResponse(
-                        item.Id,
-                        item.ProductId,
-                        item.SkuSnapshot,
-                        item.ProductNameSnapshot,
-                        item.Quantity,
-                        item.UnitPrice,
-                        item.DiscountAmount,
-                        item.LineTotal)).ToArray())).ToArray());
+            order.SellerOrders.SelectMany(sellerOrder => sellerOrder.Items)
+                .OrderBy(item => item.ProductNameSnapshot)
+                .Select(item => new CheckoutItemResponse(
+                    item.Id,
+                    item.ProductId,
+                    item.SkuSnapshot,
+                    item.ProductNameSnapshot,
+                    item.Quantity,
+                    item.UnitPrice,
+                    item.DiscountAmount,
+                    item.LineTotal))
+                .ToArray());
     }
 }

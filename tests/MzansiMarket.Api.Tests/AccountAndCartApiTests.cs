@@ -88,6 +88,8 @@ public sealed class AccountAndCartApiTests(ApiFactory factory) : IClassFixture<A
         Assert.Equal(HttpStatusCode.Created, added.StatusCode);
         using var addedBody = JsonDocument.Parse(await added.Content.ReadAsStringAsync());
         var itemId = addedBody.RootElement.GetProperty("items")[0].GetProperty("id").GetGuid();
+        Assert.False(addedBody.RootElement.GetProperty("items")[0].TryGetProperty("storeName", out _));
+        Assert.False(addedBody.RootElement.GetProperty("items")[0].TryGetProperty("storeSlug", out _));
         Assert.Equal(500m, addedBody.RootElement.GetProperty("subtotal").GetDecimal());
 
         var merged = await ownerClient.PostAsJsonAsync("/api/cart/items", new

@@ -56,8 +56,6 @@ export type Product = {
   currency: string
   availableQuantity: number
   isInStock: boolean
-  storeName: string
-  storeSlug: string
   primaryImageUrl: string | null
   primaryImageAltText: string | null
 }
@@ -90,8 +88,6 @@ export type CartItem = {
   productId: string
   productName: string
   productSlug: string
-  storeName: string
-  storeSlug: string
   quantity: number
   unitPrice: number
   lineTotal: number
@@ -205,6 +201,19 @@ export type SellerProductInput = {
   imageAltText: string | null
   initialStock: number
   reorderLevel: number
+}
+
+export type SellerApplication = {
+  sellerId: string
+  displayName: string
+  email: string
+  tradingName: string
+  registrationNumber: string | null
+  sellerStatus: string
+  storeName: string
+  storeSlug: string
+  storeStatus: string
+  createdAt: string
 }
 
 export type ApiProblem = {

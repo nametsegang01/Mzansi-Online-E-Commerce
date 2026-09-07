@@ -5,8 +5,8 @@ import { App } from './App'
 
 const product = {
   id: '11111111-1111-1111-1111-111111111111', sku: 'LOCAL-1', name: 'Handwoven Basket', slug: 'handwoven-basket',
-  price: 420, currency: 'ZAR', availableQuantity: 5, isInStock: true, storeName: 'Ubuntu Weaves',
-  storeSlug: 'ubuntu-weaves', primaryImageUrl: null, primaryImageAltText: null,
+  price: 420, currency: 'ZAR', availableQuantity: 5, isInStock: true,
+  primaryImageUrl: null, primaryImageAltText: null,
 }
 
 function json(value: unknown, status = 200) {
@@ -30,6 +30,7 @@ describe('integrated marketplace frontend', () => {
     expect(screen.getByRole('heading', { name: /proudly local/i })).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Handwoven Basket' })).toBeInTheDocument()
     expect(screen.getByText('1 products')).toBeInTheDocument()
+    expect(screen.queryByText('Ubuntu Weaves')).not.toBeInTheDocument()
   })
 
   it('sends catalogue search to the API', async () => {

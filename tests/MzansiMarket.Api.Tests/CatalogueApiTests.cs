@@ -23,17 +23,22 @@ public sealed class CatalogueApiTests(ApiFactory factory) : IClassFixture<ApiFac
         var items = body.RootElement.GetProperty("items").EnumerateArray().ToArray();
         Assert.Equal(seed.BasketId, items[0].GetProperty("id").GetGuid());
         Assert.Equal(seed.MugId, items[1].GetProperty("id").GetGuid());
+        Assert.All(items, item =>
+        {
+            Assert.False(item.TryGetProperty("storeName", out _));
+            Assert.False(item.TryGetProperty("storeSlug", out _));
+        });
         Assert.DoesNotContain(items, item => item.GetProperty("id").GetGuid() == seed.DraftId);
     }
 
     [Fact]
-    public async Task Products_SupportSearchCategoryPriceStoreAndAvailabilityFilters()
+    public async Task Products_SupportProductSearchCategoryPriceAndAvailabilityFilters()
     {
         await EnsureCatalogueSeededAsync();
         using var client = factory.CreateApiClient();
 
         var inStock = await client.GetAsync(
-            "/api/products?search=ubuntu&category=home-living&store=ubuntu-weaves&inStock=true");
+            "/api/products?search=Handwoven&category=home-living&inStock=true");
         Assert.Equal(HttpStatusCode.OK, inStock.StatusCode);
         using var inStockBody = JsonDocument.Parse(await inStock.Content.ReadAsStringAsync());
         Assert.Equal(1, inStockBody.RootElement.GetProperty("totalCount").GetInt32());
@@ -58,12 +63,12 @@ public sealed class CatalogueApiTests(ApiFactory factory) : IClassFixture<ApiFac
         Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
         using var detailBody = JsonDocument.Parse(await detail.Content.ReadAsStringAsync());
         Assert.Equal(8, detailBody.RootElement.GetProperty("availableQuantity").GetInt32());
-        Assert.Equal("Ubuntu Weaves", detailBody.RootElement.GetProperty("store").GetProperty("name").GetString());
+        Assert.False(detailBody.RootElement.TryGetProperty("store", out _));
         Assert.Equal("A handwoven storage basket",
             detailBody.RootElement.GetProperty("images")[0].GetProperty("altText").GetString());
 
-        var bySlug = await client.GetAsync("/api/stores/ubuntu-weaves/products/handwoven-storage-basket");
-        Assert.Equal(HttpStatusCode.OK, bySlug.StatusCode);
+        var formerStoreRoute = await client.GetAsync("/api/stores/ubuntu-weaves/products/handwoven-storage-basket");
+        Assert.Equal(HttpStatusCode.Unauthorized, formerStoreRoute.StatusCode);
 
         var draft = await client.GetAsync($"/api/products/{seed.DraftId}");
         Assert.Equal(HttpStatusCode.NotFound, draft.StatusCode);

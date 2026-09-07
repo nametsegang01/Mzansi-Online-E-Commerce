@@ -1,4 +1,4 @@
-import { Heart, Image, ShoppingBag, Store } from 'lucide-react'
+import { Heart, Image, ShoppingBag } from 'lucide-react'
 import type { Product } from '../api/types'
 
 const currency = new Intl.NumberFormat('en-ZA', {
@@ -35,7 +35,6 @@ export function ProductCard({
         </button>
       </div>
       <div className="product-card__content">
-        <p className="product-card__seller"><Store size={13} /> {product.storeName}</p>
         <h3>{product.name}</h3>
         <p className="product-card__province">SKU {product.sku}</p>
         <div className="product-card__footer">

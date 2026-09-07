@@ -22,7 +22,7 @@ public sealed record CheckoutResponse(
     DateTimeOffset ReservationExpiresAt,
     string? PromotionCode,
     CheckoutAddressResponse ShippingAddress,
-    IReadOnlyCollection<CheckoutSellerOrderResponse> SellerOrders);
+    IReadOnlyCollection<CheckoutItemResponse> Items);
 
 public sealed record CheckoutAddressResponse(
     string RecipientName,
@@ -32,16 +32,6 @@ public sealed record CheckoutAddressResponse(
     string Province,
     string PostalCode,
     string CountryCode);
-
-public sealed record CheckoutSellerOrderResponse(
-    Guid Id,
-    Guid StoreId,
-    string StoreName,
-    decimal Subtotal,
-    decimal DiscountTotal,
-    decimal DeliveryTotal,
-    decimal GrandTotal,
-    IReadOnlyCollection<CheckoutItemResponse> Items);
 
 public sealed record CheckoutItemResponse(
     Guid Id,

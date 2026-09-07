@@ -198,8 +198,6 @@ public static class CartEndpoints
                     product.Id,
                     product.Name,
                     product.Slug,
-                    product.Store.Name,
-                    product.Store.Slug,
                     item.Quantity,
                     product.Price,
                     product.Price * item.Quantity,

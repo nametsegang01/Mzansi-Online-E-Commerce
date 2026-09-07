@@ -22,7 +22,7 @@
 ## Dependency-ordered work units
 
 1. `BE-001 Identity foundation`: customer/seller registration, login, refresh, account inspection, logout-all, lockout, role policies, active-account checks, approved-seller checks, CORS, rate limiting, persisted data-protection keys, and API tests.
-2. `BE-002 Public catalogue`: categories, product search/filter/paging, product detail, availability, seller/store context, and query tests.
+2. `BE-002 Public catalogue`: categories, product search/filter/paging, product detail, availability, unified platform presentation, and query tests.
 3. `BE-003 Customer account and cart`: address book, one active cart, add/update/remove items, server-derived cart summaries, ownership checks, and tests.
 4. `BE-004 Transactional checkout`: address snapshots, promotion evaluation, delivery calculation, multi-seller order creation, concurrency-safe stock reservations, idempotency, and tests.
 5. `BE-005 Sandbox payments`: simulated provider adapter, payment-status webhook simulation, duplicate-event protection, reservation commit/release, and tests. No raw card fields.
@@ -62,8 +62,8 @@
 
 - Acceptance criteria:
   - Anonymous users can list active categories and active products from active stores.
-  - Product search supports name, description, SKU, category, seller/store, price, availability, sorting, and bounded pagination.
-  - Product detail returns seller, category, accessible image, price, and availability data without exposing draft, inactive, deleted, or suspended content.
+  - Product search supports name, description, SKU, category, price, availability, sorting, and bounded pagination without seller-based discovery.
+  - Product detail returns category, accessible image, price, and availability data without exposing seller identity or draft, inactive, deleted, or suspended content.
   - Invalid filters return specific validation problems.
   - Positive, hidden-content, filtering, paging, and not-found API tests pass.
 
@@ -139,6 +139,19 @@
 - Implemented pending-reseller workspace authorization, owned store/product CRUD, external-image metadata, inventory adjustments, soft archival, publish/unpublish controls, administrator decisions, and audit records.
 - Added DATA-005 (`20260904064645_SeedMarketplaceCategories`) with six deterministic marketplace categories so a fresh deployment can accept reseller products.
 - Validation: full API suite passes 27/27; release build has zero warnings/errors; EF reports no pending model changes.
+
+### BE-008B Administrator approval interface and customer seller-anonymity
+
+- Acceptance criteria:
+  - Only active system administrators can list and decide reseller applications.
+  - Administrators receive the applicant, trading, registration, store, and status fields needed for approval decisions.
+  - A configured bootstrap administrator can be created idempotently without committing credentials or resetting an existing account.
+  - Public catalogue, product detail, cart, and checkout responses do not expose store or reseller identity.
+  - Store-specific public product lookup and seller-based public search/filtering are removed while internal seller-order partitioning remains intact.
+
+- Status: PASS locally; awaiting Render release.
+- Implemented the administrator application contract, secure idempotent bootstrap, reseller decision authorization tests, and unified customer commerce responses.
+- Validation: full API suite passes 28/28; release build has zero warnings/errors; formatting verification passes; EF reports no pending model changes.
 
 ## Known limitations and pending decisions
 

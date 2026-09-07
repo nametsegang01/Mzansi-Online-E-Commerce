@@ -128,6 +128,8 @@ if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
     app.Logger.LogInformation("Database migrations are current.");
 }
 
+await AdministratorBootstrap.EnsureAsync(app.Services, builder.Configuration, app.Logger);
+
 app.Run();
 
 public partial class Program;

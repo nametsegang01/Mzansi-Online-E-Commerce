@@ -1642,3 +1642,59 @@ label small { color:var(--muted);font-weight:500 }
     border: 2px solid ButtonText;
   }
 }
+
+/* Administrator reseller review */
+.admin-workspace { max-width: 1180px; }
+.admin-heading { margin-bottom: 1.5rem; display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+.admin-heading > div:first-child { max-width: 48rem; }
+.admin-heading h1 { margin: .35rem 0; color: var(--pine-950); font: 600 clamp(2.4rem, 5vw, 4.5rem)/1 Georgia, serif; letter-spacing: -.045em; }
+.admin-heading > div:first-child > p:last-child { margin: .8rem 0 0; color: var(--muted); font-size: 1rem; line-height: 1.6; }
+.admin-heading .eyebrow { display: flex; align-items: center; gap: .4rem; }
+.admin-heading .eyebrow svg { width: 1rem; }
+.admin-session { min-width: 18rem; padding: .8rem; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .7rem; border: 1px solid var(--line); border-radius: 1.1rem; background: rgb(255 254 251 / 78%); backdrop-filter: blur(20px); box-shadow: var(--shadow-sm); }
+.admin-session .avatar { width: 2.6rem; height: 2.6rem; margin: 0; font-size: .95rem; }
+.admin-session p { margin: 0; display: grid; }
+.admin-session strong { font-size: .82rem; }
+.admin-session small { color: var(--muted); font-size: .68rem; }
+.admin-summary { margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+.admin-summary > div { padding: 1rem 1.15rem; display: flex; align-items: center; gap: .8rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--paper); box-shadow: var(--shadow-sm); }
+.admin-summary svg { width: 1.35rem; color: var(--pine-700); }
+.admin-summary span { display: grid; color: var(--muted); font-size: .7rem; }
+.admin-summary strong { color: var(--ink); font-size: 1.35rem; }
+.admin-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.admin-toolbar .workspace-tabs { margin: 0; flex: 1; }
+.admin-toolbar .secondary-button svg { width: 1rem; }
+.application-grid { margin-top: 1.25rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.application-card { padding: 1.25rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--paper); box-shadow: var(--shadow-sm); }
+.application-card > header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .75rem; }
+.business-mark { width: 2.8rem; height: 2.8rem; display: grid; place-items: center; border-radius: .85rem; color: var(--paper); background: var(--pine-850); }
+.business-mark svg { width: 1.25rem; }
+.application-card header p, .application-card header h2 { margin: 0; }
+.application-card header h2 { margin-top: .18rem; font-size: 1.05rem; }
+.admin-status { padding: .35rem .55rem; border-radius: 999px; color: #73591d; background: #fff3d2; font-size: .64rem; font-weight: 800; }
+.admin-status--approved { color: #1f624d; background: #e1f5e9; }
+.admin-status--rejected, .admin-status--suspended { color: #8a3035; background: #fff0f0; }
+.application-card dl { margin: 1.2rem 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.application-card dl > div { min-width: 0; padding: .65rem; border-radius: .7rem; background: var(--sage-100); }
+.application-card dt { color: var(--muted); font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.application-card dd { margin: .2rem 0 0; overflow-wrap: anywhere; font-size: .78rem; font-weight: 650; }
+.application-card > footer { padding-top: 1rem; display: flex; justify-content: flex-end; gap: .55rem; border-top: 1px solid var(--line); }
+.application-card > footer svg { width: 1rem; }
+.admin-empty { margin-top: 1.25rem; min-height: 18rem; background: rgb(255 254 251 / 55%); }
+
+@media (max-width: 900px) {
+  .admin-heading { align-items: stretch; flex-direction: column; }
+  .admin-session { width: 100%; }
+}
+
+@media (max-width: 760px) {
+  .admin-summary, .application-grid { grid-template-columns: 1fr; }
+  .admin-toolbar { align-items: stretch; flex-direction: column; }
+  .admin-toolbar .workspace-tabs { width: 100%; }
+  .application-card dl { grid-template-columns: 1fr; }
+  .mobile-tab-bar { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .admin-session { background: var(--paper); backdrop-filter: none; }
+}
