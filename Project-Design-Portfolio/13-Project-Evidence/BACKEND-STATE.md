@@ -149,7 +149,7 @@
   - Public catalogue, product detail, cart, and checkout responses do not expose store or reseller identity.
   - Store-specific public product lookup and seller-based public search/filtering are removed while internal seller-order partitioning remains intact.
 
-- Status: PASS locally; awaiting Render release.
+- Status: PASS locally and deployed on Render.
 - Implemented the administrator application contract, secure idempotent bootstrap, reseller decision authorization tests, and unified customer commerce responses.
 - Validation: full API suite passes 28/28; release build has zero warnings/errors; formatting verification passes; EF reports no pending model changes.
 
@@ -164,13 +164,15 @@
 
 - Service: `mzansi-market-api` (`srv-da8lb75g1s2s739oncb0`), Docker, Frankfurt, Free.
 - Public URL: `https://mzansi-market-api.onrender.com`.
-- Source release: commit `bd59c46` on `main` (`Build reseller catalogue and storefront publishing`).
+- Source release: commit `7fb5727` on `main` (`Add reseller administration and unify storefront`).
 - Environment: private `DATABASE_URL`, Production environment, controlled startup migrations, deployed-frontend-only CORS, authentication rate limiting, and a generated sandbox webhook secret.
 - Database: DATA-002 through DATA-005 applied successfully at startup; Render logs explicitly record `20260904064645_SeedMarketplaceCategories` and report migrations current.
 - Platform health check: `/health/database`.
 - Public verification: health 200/Healthy; customer registration 201; login and refresh issue opaque tokens; `/api/auth/me` returns the matching fictional customer and Customer role; invalid password returns 401; the customer frontend origin is allowed and an untrusted origin receives no CORS allow header.
 - Reseller verification: six public categories; pending registration; draft store; authenticated draft product creation; pending products excluded from the customer catalogue; draft archived after the check; unauthenticated seller store access returns 401.
-- API deploy `dep-dad6ltoae00c73djg1q0` reached `live`; post-deploy error-log scan returned no errors.
+- Administrator verification: the one-time Render-secret bootstrap created a persisted `SystemAdministrator`; the bootstrap values were then cleared; administrator login and the protected application queue return 200 and one current application without exposing credentials in source control.
+- Unified-storefront verification: public product contracts no longer include store identity; seller-specific public lookup/search is removed; internal seller-order partitioning remains unchanged.
+- Final API deploy `dep-dafhlme7bikc738l0h00` reached `live`; post-deploy error-log scan returned no errors.
 - Free-tier limitation: cold starts can delay the first request after inactivity, and the database remains temporary development infrastructure.
 
 ## Next ready action

@@ -46,7 +46,7 @@
    - Desktop browser inspection confirms the storefront and authentication sheet render without console warnings.
    - Mobile DOM inspection at 390×844 confirms document width remains within the viewport.
 
-6. `FE-006 Administrator approvals and unified storefront` — PASS locally; awaiting Render release
+6. `FE-006 Administrator approvals and unified storefront` — PASS locally and deployed on Render
    - System administrators are routed to a protected reseller-review workspace after login.
    - Pending, approved, rejected, and suspended application filters expose applicant, business, registration, and store-state details only to administrators.
    - Approve, reject, and suspend actions update the API-backed review queue with immediate, accessible feedback.
@@ -72,6 +72,8 @@
 - CDN verification: root HTTP request succeeded and the deployed JavaScript bundle contains the seller-studio and live-stock application paths.
 - Reseller release: source `bd59c46`, Render deploy `dep-dad6ltoae00c73djg1vg`, status `live` on 2026-09-04.
 - Reseller CDN verification: deployed bundle contains `Reseller studio` and `Create draft product`; post-deploy error-log scan returned no errors.
+- Administration/unified-storefront release: source `7fb5727`, Render deploy `dep-dafhk5u7bikc73eanblg`, status `live` on 2026-09-07.
+- Public verification: root returns 200; deployed bundle contains `Reseller approvals` and `One trusted checkout`, omits the former independent-seller customer copy, and the deployment error-log scan is empty.
 
 ## Next dependency-ordered work
 
