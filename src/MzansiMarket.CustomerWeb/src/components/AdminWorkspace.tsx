@@ -8,20 +8,21 @@ type Decision = 'Approve' | 'Reject' | 'Suspend'
 const filters: Filter[] = ['All', 'Pending', 'Approved', 'Rejected', 'Suspended']
 const date = new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })
 
-export function AdminWorkspace({ user, announce, onSignOut }: { user: CurrentUser; announce: (text: string) => void; onSignOut: () => Promise<void> }) {
+export function AdminWorkspace({ user, announce, onSignOut, syncVersion = 0 }: { user: CurrentUser; announce: (text: string) => void; onSignOut: () => Promise<void>; syncVersion?: number }) {
   const [applications, setApplications] = useState<SellerApplication[]>([])
   const [filter, setFilter] = useState<Filter>('Pending')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
-    setLoading(true); setError('')
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true); setError('')
     try { setApplications(await api.adminSellerApplications()) }
     catch (value) { setError(value instanceof ApiError ? value.message : 'The reseller applications could not be loaded.') }
-    finally { setLoading(false) }
+    finally { if (!quiet) setLoading(false) }
   }, [])
   useEffect(() => { void load() }, [load])
+  useEffect(() => { if (syncVersion) void load(true) }, [load, syncVersion])
 
   const visible = useMemo(() => filter === 'All' ? applications : applications.filter(item => item.sellerStatus === filter), [applications, filter])
   const count = (status: Filter) => status === 'All' ? applications.length : applications.filter(item => item.sellerStatus === status).length

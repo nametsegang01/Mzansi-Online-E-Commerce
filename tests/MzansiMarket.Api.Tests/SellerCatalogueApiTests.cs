@@ -14,7 +14,27 @@ namespace MzansiMarket.Api.Tests;
 public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
     [Fact]
-    public async Task Reseller_CanBuildDraftThenPublishAfterAdministratorApproval()
+    public async Task ApprovedReseller_NewProductIsPublishedImmediately()
+    {
+        var seller = await RegisterSellerAsync("instant");
+        var categoryId = await CreateCategoryAsync();
+        var administrator = await CreateAdministratorAsync();
+        using var adminClient = Client(administrator);
+        Assert.Equal(HttpStatusCode.OK, (await adminClient.PostAsJsonAsync(
+            $"/api/admin/sellers/{seller.UserId}/decision", new { action = "Approve" })).StatusCode);
+
+        using var sellerClient = Client(seller.Token);
+        var create = await sellerClient.PostAsJsonAsync("/api/seller/products", ProductBody(categoryId, seller.Suffix));
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        using var created = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
+        Assert.Equal("Active", created.RootElement.GetProperty("status").GetString());
+
+        using var publicClient = factory.CreateApiClient();
+        Assert.Equal(1, await PublicCountAsync(publicClient, seller.Suffix));
+    }
+
+    [Fact]
+    public async Task Reseller_DraftPublishesWhenAdministratorApproves()
     {
         var seller = await RegisterSellerAsync("publish");
         var categoryId = await CreateCategoryAsync();
@@ -53,9 +73,6 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
         var approval = await adminClient.PostAsJsonAsync($"/api/admin/sellers/{seller.UserId}/decision",
             new { action = "Approve" });
         Assert.Equal(HttpStatusCode.OK, approval.StatusCode);
-
-        var publish = await sellerClient.PostAsync($"/api/seller/products/{productId}/publish", null);
-        Assert.Equal(HttpStatusCode.OK, publish.StatusCode);
         Assert.Equal(1, await PublicCountAsync(publicClient, seller.Suffix));
 
         using var scope = factory.Services.CreateScope();

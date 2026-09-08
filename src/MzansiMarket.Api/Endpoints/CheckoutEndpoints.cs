@@ -7,6 +7,7 @@ using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Contracts;
 using MzansiMarket.Api.Data;
 using MzansiMarket.Api.Domain;
+using MzansiMarket.Api.Services;
 
 namespace MzansiMarket.Api.Endpoints;
 
@@ -30,6 +31,7 @@ public static class CheckoutEndpoints
         ClaimsPrincipal principal,
         MarketplaceDbContext dbContext,
         IConfiguration configuration,
+        MarketplaceChangeFeed changes,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
@@ -240,6 +242,7 @@ public static class CheckoutEndpoints
             throw;
         }
 
+        changes.Publish("catalogue", "seller");
         return Results.Created($"/api/orders/{order.Id}", ToResponse(order));
     }
 

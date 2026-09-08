@@ -9,6 +9,7 @@ using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Data;
 using MzansiMarket.Api.Domain;
 using MzansiMarket.Api.Endpoints;
+using MzansiMarket.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,6 +67,7 @@ builder.Services.Configure<BearerTokenOptions>(IdentityConstants.BearerScheme, o
 
 builder.Services.AddAuthorization(AuthorizationPolicies.Configure);
 builder.Services.AddScoped<IAuthorizationHandler, MarketplaceAuthorizationHandler>();
+builder.Services.AddSingleton<MarketplaceChangeFeed>();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options => options.AddPolicy("CustomerWeb", policy =>
@@ -90,6 +92,10 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0,
                 AutoReplenishment = true
             }));
+    options.AddPolicy("sync", httpContext =>
+        RateLimitPartition.GetConcurrencyLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new ConcurrencyLimiterOptions { PermitLimit = 5, QueueLimit = 0 }));
 });
 
 builder.Services.AddProblemDetails();
@@ -118,6 +124,7 @@ app.MapCheckoutEndpoints();
 app.MapPaymentEndpoints();
 app.MapFulfilmentEndpoints();
 app.MapSellerCatalogueEndpoints();
+app.MapMarketplaceSyncEndpoints();
 
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 {

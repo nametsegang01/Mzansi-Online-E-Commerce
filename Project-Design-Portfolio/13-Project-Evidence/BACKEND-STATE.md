@@ -153,6 +153,15 @@
 - Implemented the administrator application contract, secure idempotent bootstrap, reseller decision authorization tests, and unified customer commerce responses.
 - Validation: full API suite passes 28/28; release build has zero warnings/errors; formatting verification passes; EF reports no pending model changes.
 
+### BE-008C Marketplace synchronization
+
+- Status: PASS locally; production deployment pending.
+- Approved resellers' newly created, fully validated products are immediately active; pending resellers create private drafts which activate when the administrator approves the account.
+- Seller registration, approval/status decisions, product/store changes, stock adjustments, checkout reservations, and payment outcomes publish scope-only marketplace change notifications without exposing seller or customer data.
+- A public server-sent event stream distributes those invalidations to customer, reseller, and administrator clients, with per-IP concurrent-connection limiting and periodic keep-alives.
+- No database migration or API response-contract change is required.
+- Validation: full API suite passes 30/30, release build has zero warnings/errors, and formatting verification passes.
+
 ## Known limitations and pending decisions
 
 - Email delivery, confirmation links, password-reset delivery, and optional MFA depend on the notification work unit. They are not to be falsely represented as active until a sandbox notification adapter exists.

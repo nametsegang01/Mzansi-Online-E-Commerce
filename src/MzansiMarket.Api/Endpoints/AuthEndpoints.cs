@@ -9,6 +9,7 @@ using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Contracts;
 using MzansiMarket.Api.Data;
 using MzansiMarket.Api.Domain;
+using MzansiMarket.Api.Services;
 
 namespace MzansiMarket.Api.Endpoints;
 
@@ -97,6 +98,7 @@ public static class AuthEndpoints
             userManager,
             dbContext,
             httpContext,
+            changes: null,
             cancellationToken);
     }
 
@@ -104,6 +106,7 @@ public static class AuthEndpoints
         SellerRegistrationRequest request,
         UserManager<ApplicationUser> userManager,
         MarketplaceDbContext dbContext,
+        MarketplaceChangeFeed changes,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
@@ -172,6 +175,7 @@ public static class AuthEndpoints
             userManager,
             dbContext,
             httpContext,
+            changes,
             cancellationToken);
     }
 
@@ -185,6 +189,7 @@ public static class AuthEndpoints
         UserManager<ApplicationUser> userManager,
         MarketplaceDbContext dbContext,
         HttpContext httpContext,
+        MarketplaceChangeFeed? changes,
         CancellationToken cancellationToken)
     {
         await using var transaction = dbContext.Database.IsRelational()
@@ -225,6 +230,8 @@ public static class AuthEndpoints
         {
             await transaction.CommitAsync(cancellationToken);
         }
+
+        if (sellerStatus is not null) changes?.Publish("resellers");
 
         return Results.Created("/api/auth/me", new RegistrationResponse(
             user.Id,

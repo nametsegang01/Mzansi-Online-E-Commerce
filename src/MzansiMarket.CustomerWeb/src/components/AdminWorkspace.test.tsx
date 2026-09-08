@@ -26,4 +26,12 @@ describe('administrator reseller approvals', () => {
     await waitFor(() => expect(approve).toHaveBeenCalledWith('seller-1', 'Approve'))
     expect(announce).toHaveBeenCalledWith('Ubuntu Goods is now approved.')
   })
+
+  it('silently reloads applications after a marketplace sync', async () => {
+    const applications = vi.mocked(api.adminSellerApplications)
+    const { rerender } = render(<AdminWorkspace user={admin} announce={vi.fn()} onSignOut={vi.fn()} syncVersion={0} />)
+    await screen.findByRole('heading', { name: 'Ubuntu Goods' })
+    rerender(<AdminWorkspace user={admin} announce={vi.fn()} onSignOut={vi.fn()} syncVersion={1} />)
+    await waitFor(() => expect(applications).toHaveBeenCalledTimes(2))
+  })
 })

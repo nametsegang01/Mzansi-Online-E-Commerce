@@ -9,7 +9,7 @@ const money = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR
 const dateTime = new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })
 const errorText = (value: unknown) => value instanceof ApiError ? value.message : value instanceof Error ? value.message : 'Something went wrong.'
 
-export function ResellerWorkspace({ user, announce }: { user: CurrentUser; announce: (text: string) => void }) {
+export function ResellerWorkspace({ user, announce, syncVersion = 0 }: { user: CurrentUser; announce: (text: string) => void; syncVersion?: number }) {
   const [tab, setTab] = useState<Tab>('products')
   const [store, setStore] = useState<SellerStore | null>(null)
   const [products, setProducts] = useState<SellerProduct[]>([])
@@ -20,15 +20,16 @@ export function ResellerWorkspace({ user, announce }: { user: CurrentUser; annou
   const [stockProduct, setStockProduct] = useState<SellerProduct | null>(null)
   const [dispatchOrder, setDispatchOrder] = useState<FulfilmentOrder | null>(null)
 
-  const load = useCallback(async () => {
-    setBusy(true); setError('')
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setBusy(true); setError('')
     try {
       const [storeResult, productResult, categoryResult] = await Promise.all([api.sellerStore(), api.sellerProducts(), api.categories()])
       setStore(storeResult); setProducts(productResult); setCategories(categoryResult)
       if (storeResult.canPublish) setOrders(await api.fulfilment())
-    } catch (value) { setError(errorText(value)) } finally { setBusy(false) }
+    } catch (value) { setError(errorText(value)) } finally { if (!quiet) setBusy(false) }
   }, [])
   useEffect(() => { void load() }, [load])
+  useEffect(() => { if (syncVersion) void load(true) }, [load, syncVersion])
 
   async function productAction(product: SellerProduct, action: 'publish' | 'unpublish' | 'delete') {
     if (action === 'delete' && !window.confirm(`Archive ${product.name}? It will no longer appear in your catalogue.`)) return
@@ -54,9 +55,25 @@ export function ResellerWorkspace({ user, announce }: { user: CurrentUser; annou
     {error && <Notice error>{error}</Notice>}
     <nav className="workspace-tabs" aria-label="Reseller workspace"><button aria-current={tab === 'products' ? 'page' : undefined} onClick={() => setTab('products')}><Box/> Products <span>{products.length}</span></button><button aria-current={tab === 'orders' ? 'page' : undefined} onClick={() => setTab('orders')}><ClipboardList/> Orders <span>{orders.length}</span></button><button aria-current={tab === 'store' ? 'page' : undefined} onClick={() => setTab('store')}><Settings/> Store settings</button></nav>
     {busy ? <Loading/> : tab === 'products' ? <Products products={products} canPublish={store?.canPublish ?? false} busy={actionBusy} edit={setEditing} stock={setStockProduct} action={productAction}/> : tab === 'orders' ? <Orders orders={orders} canPublish={store?.canPublish ?? false} busy={actionBusy} transition={transition} dispatch={setDispatchOrder}/> : store && <StoreSettings store={store} onSaved={(next) => { setStore(next); announce('Store details saved.') }}/>} 
-    {editing && <ProductSheet product={editing === 'new' ? null : editing} categories={categories} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); announce('Product saved to your catalogue.') }}/>} 
-    {stockProduct && <InventorySheet product={stockProduct} onClose={() => setStockProduct(null)} onSaved={async () => { setStockProduct(null); await load(); announce('Inventory updated.') }}/>} 
-    {dispatchOrder && <DispatchSheet onClose={() => setDispatchOrder(null)} onSubmit={(carrier, tracking) => transition(dispatchOrder, 'Dispatch', carrier, tracking)}/>} 
+    {editing && (
+      <ProductSheet
+        product={editing === 'new' ? null : editing}
+        categories={categories}
+        canPublish={store?.canPublish ?? false}
+        onClose={() => setEditing(null)}
+        onSaved={async () => {
+          const wasNew = editing === 'new'
+          setEditing(null); await load()
+          announce(wasNew ? store?.canPublish ? 'Product published to Mzansi Market.' : 'Product saved as a draft while approval is pending.' : 'Product changes saved.')
+        }}
+      />
+    )}
+    {stockProduct && (
+      <InventorySheet product={stockProduct} onClose={() => setStockProduct(null)} onSaved={async () => { setStockProduct(null); await load(); announce('Inventory updated.') }}/>
+    )}
+    {dispatchOrder && (
+      <DispatchSheet onClose={() => setDispatchOrder(null)} onSubmit={(carrier, tracking) => transition(dispatchOrder, 'Dispatch', carrier, tracking)}/>
+    )}
   </section>
 }
 
@@ -83,7 +100,7 @@ function StoreSettings({ store, onSaved }: { store: SellerStore; onSaved: (store
   return <div className="store-settings panel-surface"><div><span className="store-icon"><Store/></span><h2>Store profile</h2><p>Your public store identity. The permanent address is <strong>/{store.slug}</strong>.</p></div>{error && <Notice error>{error}</Notice>}<form className="stack-form" onSubmit={submit}><label>Store name<input name="name" defaultValue={store.name} required minLength={2} maxLength={180}/></label><label>Store description<textarea name="description" defaultValue={store.description ?? ''} maxLength={2000} rows={5} placeholder="Tell customers what makes your products special."/></label><label>Customer support email<input name="supportEmail" type="email" defaultValue={store.supportEmail ?? ''}/></label><button className="primary-button" disabled={busy}>{busy && <LoaderCircle className="spin"/>} Save store details</button></form></div>
 }
 
-function ProductSheet({ product, categories, onClose, onSaved }: { product: SellerProduct | null; categories: Category[]; onClose: () => void; onSaved: () => Promise<void> }) {
+function ProductSheet({ product, categories, canPublish, onClose, onSaved }: { product: SellerProduct | null; categories: Category[]; canPublish: boolean; onClose: () => void; onSaved: () => Promise<void> }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [name, setName] = useState(product?.name ?? ''), [slug, setSlug] = useState(product?.slug ?? '')
   function slugify(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }
   async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setBusy(true); setError(''); const data = new FormData(event.currentTarget); const body: SellerProductInput = { sku: String(data.get('sku')), name, slug, description: String(data.get('description')) || null, price: Number(data.get('price')), categoryIds: data.getAll('categories').map(String), imageUrl: String(data.get('imageUrl')) || null, imageAltText: String(data.get('imageAltText')) || null, initialStock: product ? 0 : Number(data.get('initialStock')), reorderLevel: product?.reorderLevel ?? Number(data.get('reorderLevel')) }; try { product ? await api.updateSellerProduct(product.id, body) : await api.createSellerProduct(body); await onSaved() } catch (value) { setError(errorText(value)) } finally { setBusy(false) } }
@@ -91,7 +108,7 @@ function ProductSheet({ product, categories, onClose, onSaved }: { product: Sell
     <fieldset className="category-fieldset"><legend>Categories</legend>{categories.map(category => <label key={category.id}><input type="checkbox" name="categories" value={category.id} defaultChecked={product?.categories.some(item => item.id === category.id)}/><span>{category.name}</span></label>)}</fieldset>
     <div className="form-grid"><label>Public image URL (optional)<input name="imageUrl" type="url" pattern="https://.*" defaultValue={product?.imageUrl ?? ''} placeholder="https://…"/></label><label>Image description (optional)<input name="imageAltText" defaultValue={product?.imageAltText ?? ''} maxLength={300} placeholder="Describe the product, not the filename"/></label></div>
     {!product && <div className="form-grid"><label>Opening stock<input name="initialStock" type="number" min="0" max="1000000" defaultValue="0" required/></label><label>Low-stock alert level<input name="reorderLevel" type="number" min="0" max="1000000" defaultValue="2" required/></label></div>}
-    <button className="primary-button full-width" disabled={busy || categories.length === 0}>{busy && <LoaderCircle className="spin"/>} {product ? 'Save product' : 'Create draft product'}</button>{categories.length === 0 && <Notice>No active categories exist yet. A product administrator must create one before a reseller can add products.</Notice>}</form></Drawer>
+    <button className="primary-button full-width" disabled={busy || categories.length === 0}>{busy && <LoaderCircle className="spin"/>} {product ? 'Save product' : canPublish ? 'Add & publish product' : 'Create draft product'}</button>{categories.length === 0 && <Notice>No active categories exist yet. A product administrator must create one before a reseller can add products.</Notice>}</form></Drawer>
 }
 
 function InventorySheet({ product, onClose, onSaved }: { product: SellerProduct; onClose: () => void; onSaved: () => Promise<void> }) {

@@ -104,6 +104,7 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
 }
 
 export const api = {
+  syncStreamUrl: () => `${API_URL}/api/sync/stream`,
   hasSession: () => Boolean(readSession()?.accessToken),
   clearSession: () => saveSession(null),
   categories: () => request<Category[]>('/api/categories'),

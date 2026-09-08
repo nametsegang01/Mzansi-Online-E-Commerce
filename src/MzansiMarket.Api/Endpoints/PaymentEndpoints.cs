@@ -9,6 +9,7 @@ using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Contracts;
 using MzansiMarket.Api.Data;
 using MzansiMarket.Api.Domain;
+using MzansiMarket.Api.Services;
 
 namespace MzansiMarket.Api.Endpoints;
 
@@ -115,6 +116,7 @@ public static class PaymentEndpoints
         [FromHeader(Name = "X-Sandbox-Webhook-Secret")] string? suppliedSecret,
         MarketplaceDbContext dbContext,
         IConfiguration configuration,
+        MarketplaceChangeFeed changes,
         HttpContext httpContext,
         CancellationToken cancellationToken)
     {
@@ -247,6 +249,7 @@ public static class PaymentEndpoints
             }
             throw;
         }
+        changes.Publish("catalogue", "seller");
         return Results.Ok(new SandboxPaymentEventResponse(
             eventId, false, payment.Status.ToString(), payment.Order.Status.ToString()));
     }

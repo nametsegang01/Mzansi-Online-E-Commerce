@@ -6,6 +6,7 @@ using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Contracts;
 using MzansiMarket.Api.Data;
 using MzansiMarket.Api.Domain;
+using MzansiMarket.Api.Services;
 
 namespace MzansiMarket.Api.Endpoints;
 
@@ -41,7 +42,7 @@ public static class SellerCatalogueEndpoints
         Results.Ok(ToStore(await OwnedStoreAsync(principal, db, ct)));
 
     private static async Task<IResult> UpdateStoreAsync(SellerStoreUpdateRequest request, ClaimsPrincipal principal,
-        MarketplaceDbContext db, HttpContext http, CancellationToken ct)
+        MarketplaceDbContext db, MarketplaceChangeFeed changes, HttpContext http, CancellationToken ct)
     {
         var errors = EndpointValidation.Validate(request);
         if (errors.Count > 0) return Results.ValidationProblem(errors);
@@ -49,7 +50,7 @@ public static class SellerCatalogueEndpoints
         store.Name = request.Name.Trim(); store.Description = Clean(request.Description);
         store.SupportEmail = Clean(request.SupportEmail); store.UpdatedAt = DateTimeOffset.UtcNow;
         Audit(db, principal, store.Id, "SellerStoreUpdated", http, new { store.Name, store.Description });
-        await db.SaveChangesAsync(ct); return Results.Ok(ToStore(store));
+        await db.SaveChangesAsync(ct); changes.Publish("resellers", "seller"); return Results.Ok(ToStore(store));
     }
 
     private static async Task<IResult> GetProductsAsync(ClaimsPrincipal principal, MarketplaceDbContext db, CancellationToken ct)
@@ -61,7 +62,7 @@ public static class SellerCatalogueEndpoints
     }
 
     private static async Task<IResult> CreateProductAsync(SellerProductRequest request, ClaimsPrincipal principal,
-        MarketplaceDbContext db, HttpContext http, CancellationToken ct)
+        MarketplaceDbContext db, MarketplaceChangeFeed changes, HttpContext http, CancellationToken ct)
     {
         var store = await OwnedStoreAsync(principal, db, ct);
         var errors = await ValidateProductAsync(request, null, store.Id, db, ct);
@@ -76,7 +77,9 @@ public static class SellerCatalogueEndpoints
             Description = Clean(request.Description),
             Price = request.Price,
             Currency = "ZAR",
-            Status = ProductStatus.Draft,
+            Status = store.Seller.Status == SellerStatus.Approved && store.Status == StoreStatus.Active
+                ? ProductStatus.Active
+                : ProductStatus.Draft,
             Inventory = new InventoryItem { OnHandQuantity = request.InitialStock, ReorderLevel = request.ReorderLevel, UpdatedAt = DateTimeOffset.UtcNow }
         };
         product.Inventory.Product = product;
@@ -92,11 +95,12 @@ public static class SellerCatalogueEndpoints
         });
         db.Products.Add(product); Audit(db, principal, product.Id, "SellerProductCreated", http, new { product.Sku, product.Name });
         await db.SaveChangesAsync(ct);
+        changes.Publish("catalogue", "seller");
         return Results.Created($"/api/seller/products/{product.Id}", ToProduct(product));
     }
 
     private static async Task<IResult> UpdateProductAsync(Guid productId, SellerProductRequest request,
-        ClaimsPrincipal principal, MarketplaceDbContext db, HttpContext http, CancellationToken ct)
+        ClaimsPrincipal principal, MarketplaceDbContext db, MarketplaceChangeFeed changes, HttpContext http, CancellationToken ct)
     {
         var product = await OwnedProductAsync(productId, principal, db, ct);
         if (product is null) return Results.NotFound();
@@ -113,11 +117,11 @@ public static class SellerCatalogueEndpoints
             if (!existingIds.Contains(category.Id)) product.Categories.Add(new ProductCategory { Product = product, Category = category });
         SetImage(product, request.ImageUrl, request.ImageAltText);
         Audit(db, principal, product.Id, "SellerProductUpdated", http, new { product.Sku, product.Name, product.Price });
-        await db.SaveChangesAsync(ct); return Results.Ok(ToProduct(product));
+        await db.SaveChangesAsync(ct); changes.Publish("catalogue", "seller"); return Results.Ok(ToProduct(product));
     }
 
     private static async Task<IResult> UpdateInventoryAsync(Guid productId, SellerInventoryRequest request,
-        ClaimsPrincipal principal, MarketplaceDbContext db, HttpContext http, CancellationToken ct)
+        ClaimsPrincipal principal, MarketplaceDbContext db, MarketplaceChangeFeed changes, HttpContext http, CancellationToken ct)
     {
         var errors = EndpointValidation.Validate(request);
         var product = await OwnedProductAsync(productId, principal, db, ct);
@@ -137,11 +141,11 @@ public static class SellerCatalogueEndpoints
             CreatedByUserId = UserId(principal)
         });
         Audit(db, principal, product.Id, "SellerInventoryAdjusted", http, new { delta, request.OnHandQuantity, request.ReorderLevel });
-        await db.SaveChangesAsync(ct); return Results.Ok(ToProduct(product));
+        await db.SaveChangesAsync(ct); changes.Publish("catalogue", "seller"); return Results.Ok(ToProduct(product));
     }
 
     private static async Task<IResult> PublishProductAsync(Guid productId, ClaimsPrincipal principal,
-        MarketplaceDbContext db, HttpContext http, CancellationToken ct)
+        MarketplaceDbContext db, MarketplaceChangeFeed changes, HttpContext http, CancellationToken ct)
     {
         var product = await OwnedProductAsync(productId, principal, db, ct);
         if (product is null) return Results.NotFound();
@@ -151,27 +155,27 @@ public static class SellerCatalogueEndpoints
             return Results.Problem("At least one active category is required before publication.", statusCode: StatusCodes.Status409Conflict);
         product.Status = ProductStatus.Active; product.UpdatedAt = DateTimeOffset.UtcNow;
         Audit(db, principal, product.Id, "SellerProductPublished", http, new { product.Name });
-        await db.SaveChangesAsync(ct); return Results.Ok(ToProduct(product));
+        await db.SaveChangesAsync(ct); changes.Publish("catalogue", "seller"); return Results.Ok(ToProduct(product));
     }
 
     private static async Task<IResult> UnpublishProductAsync(Guid productId, ClaimsPrincipal principal,
-        MarketplaceDbContext db, HttpContext http, CancellationToken ct)
+        MarketplaceDbContext db, MarketplaceChangeFeed changes, HttpContext http, CancellationToken ct)
     {
         var product = await OwnedProductAsync(productId, principal, db, ct);
         if (product is null) return Results.NotFound();
         product.Status = ProductStatus.Inactive; product.UpdatedAt = DateTimeOffset.UtcNow;
         Audit(db, principal, product.Id, "SellerProductUnpublished", http, new { product.Name });
-        await db.SaveChangesAsync(ct); return Results.Ok(ToProduct(product));
+        await db.SaveChangesAsync(ct); changes.Publish("catalogue", "seller"); return Results.Ok(ToProduct(product));
     }
 
     private static async Task<IResult> DeleteProductAsync(Guid productId, ClaimsPrincipal principal,
-        MarketplaceDbContext db, HttpContext http, CancellationToken ct)
+        MarketplaceDbContext db, MarketplaceChangeFeed changes, HttpContext http, CancellationToken ct)
     {
         var product = await OwnedProductAsync(productId, principal, db, ct);
         if (product is null) return Results.NotFound();
         product.IsDeleted = true; product.Status = ProductStatus.Archived; product.UpdatedAt = DateTimeOffset.UtcNow;
         Audit(db, principal, product.Id, "SellerProductArchived", http, new { product.Name });
-        await db.SaveChangesAsync(ct); return Results.NoContent();
+        await db.SaveChangesAsync(ct); changes.Publish("catalogue", "seller"); return Results.NoContent();
     }
 
     private static async Task<IResult> GetApplicationsAsync(MarketplaceDbContext db, CancellationToken ct)
@@ -182,20 +186,31 @@ public static class SellerCatalogueEndpoints
     }
 
     private static async Task<IResult> DecideApplicationAsync(Guid sellerId, SellerDecisionRequest request,
-        ClaimsPrincipal principal, MarketplaceDbContext db, HttpContext http, CancellationToken ct)
+        ClaimsPrincipal principal, MarketplaceDbContext db, MarketplaceChangeFeed changes, HttpContext http, CancellationToken ct)
     {
         var errors = EndpointValidation.Validate(request); var action = request.Action.Trim().ToLowerInvariant();
         if (action is not ("approve" or "reject" or "suspend")) errors["Action"] = ["Use Approve, Reject, or Suspend."];
         if (errors.Count > 0) return Results.ValidationProblem(errors);
-        var seller = await db.SellerProfiles.Include(x => x.User).Include(x => x.Store).SingleOrDefaultAsync(x => x.UserId == sellerId, ct);
+        var seller = await db.SellerProfiles.Include(x => x.User).Include(x => x.Store).ThenInclude(x => x!.Products)
+            .SingleOrDefaultAsync(x => x.UserId == sellerId, ct);
         if (seller?.Store is null) return Results.NotFound();
         var now = DateTimeOffset.UtcNow;
-        if (action == "approve") { seller.Status = SellerStatus.Approved; seller.ApprovedAt = now; seller.Store.Status = StoreStatus.Active; }
+        var activatedProducts = 0;
+        if (action == "approve")
+        {
+            seller.Status = SellerStatus.Approved; seller.ApprovedAt = now; seller.Store.Status = StoreStatus.Active;
+            foreach (var product in seller.Store.Products.Where(product => !product.IsDeleted && product.Status == ProductStatus.Draft))
+            {
+                product.Status = ProductStatus.Active; product.UpdatedAt = now; activatedProducts++;
+                Audit(db, principal, product.Id, "SellerProductPublished", http,
+                    new { product.Name, Reason = "SellerApproved" });
+            }
+        }
         else if (action == "reject") { seller.Status = SellerStatus.Rejected; seller.ApprovedAt = null; seller.Store.Status = StoreStatus.Closed; }
         else { seller.Status = SellerStatus.Suspended; seller.Store.Status = StoreStatus.Suspended; }
         Audit(db, principal, seller.UserId, $"Seller{request.Action.Trim()}", http,
-            new { SellerStatus = seller.Status, StoreStatus = seller.Store.Status });
-        await db.SaveChangesAsync(ct); return Results.Ok(ToApplication(seller));
+            new { SellerStatus = seller.Status, StoreStatus = seller.Store.Status, ActivatedProducts = activatedProducts });
+        await db.SaveChangesAsync(ct); changes.Publish("resellers", "seller", "catalogue"); return Results.Ok(ToApplication(seller));
     }
 
     private static IQueryable<Product> ProductQuery(MarketplaceDbContext db) => db.Products

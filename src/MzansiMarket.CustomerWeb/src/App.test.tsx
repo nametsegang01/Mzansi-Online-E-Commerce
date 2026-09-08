@@ -14,6 +14,7 @@ function json(value: unknown, status = 200) {
 }
 
 beforeEach(() => {
+  vi.unstubAllGlobals()
   sessionStorage.clear()
   vi.stubGlobal('scrollTo', vi.fn())
   vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
@@ -29,7 +30,7 @@ describe('integrated marketplace frontend', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: /proudly local/i })).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Handwoven Basket' })).toBeInTheDocument()
-    expect(screen.getByText('1 products')).toBeInTheDocument()
+    expect(screen.getByText(/Auto-updating/)).toHaveTextContent('Auto-updating · 1 products')
     expect(screen.queryByText('Ubuntu Weaves')).not.toBeInTheDocument()
   })
 
@@ -38,6 +39,21 @@ describe('integrated marketplace frontend', () => {
     render(<App />)
     await user.type(screen.getByRole('searchbox'), 'basket')
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('search=basket'), expect.anything()))
+  })
+
+  it('refreshes the customer catalogue when a marketplace sync event arrives', async () => {
+    const listeners = new Map<string, EventListener>()
+    class TestEventSource {
+      constructor(_url: string) {}
+      addEventListener(type: string, listener: EventListener) { listeners.set(type, listener) }
+      close() {}
+    }
+    vi.stubGlobal('EventSource', TestEventSource)
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Handwoven Basket' })
+    const callsBefore = vi.mocked(fetch).mock.calls.filter(([input]) => String(input).includes('/api/products')).length
+    listeners.get('sync')?.({ data: JSON.stringify({ Scopes: ['catalogue'] }) } as unknown as Event)
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([input]) => String(input).includes('/api/products')).length).toBeGreaterThan(callsBefore))
   })
 
   it('opens authentication before a guest adds to cart', async () => {

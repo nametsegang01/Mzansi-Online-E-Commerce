@@ -47,4 +47,12 @@ describe('reseller workspace', () => {
     await browser.click(await screen.findByRole('button', { name: 'Publish' }))
     await waitFor(() => expect(publish).toHaveBeenCalledWith('product-1'))
   })
+
+  it('silently reloads reseller state after a marketplace sync', async () => {
+    const store = vi.mocked(api.sellerStore)
+    const { rerender } = render(<ResellerWorkspace user={user} announce={vi.fn()} syncVersion={0} />)
+    await screen.findByText(/products are saved as drafts/i)
+    rerender(<ResellerWorkspace user={user} announce={vi.fn()} syncVersion={1} />)
+    await waitFor(() => expect(store).toHaveBeenCalledTimes(2))
+  })
 })
