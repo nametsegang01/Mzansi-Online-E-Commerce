@@ -59,7 +59,7 @@
    - Preserved explicit focus indicators and reduced-motion, reduced-transparency, increased-contrast, and forced-colour fallbacks.
    - Validation: all 9 frontend interaction tests pass and the TypeScript/Vite production build succeeds.
 
-8. `FE-008 Cross-role live synchronization` — PASS locally
+8. `FE-008 Cross-role live synchronization` — PASS locally and deployed on Render
    - The application maintains one event-driven marketplace change watch and revalidates only the affected customer catalogue, reseller workspace, or administrator application queue.
    - Customer product/category/stock views, reseller approval/catalogue/order state, and administrator reseller applications update without a full-page reload or loading-state flash.
    - Browser focus, tab visibility, and automatic retry provide recovery when a live update request is interrupted.
@@ -88,6 +88,8 @@
 - Reseller CDN verification: deployed bundle contains `Reseller studio` and `Create draft product`; post-deploy error-log scan returned no errors.
 - Administration/unified-storefront release: source `7fb5727`, Render deploy `dep-dafhk5u7bikc73eanblg`, status `live` on 2026-09-07.
 - Public verification: root returns 200; deployed bundle contains `Reseller approvals` and `One trusted checkout`, omits the former independent-seller customer copy, and the deployment error-log scan is empty.
+- Cross-role synchronization release: source `aa911a5`, Render deploy `dep-dafrf7favr4c73ce88p0`, status `live` on 2026-09-08.
+- Synchronization CDN verification: the deployed bundle uses `/api/sync/changes`, retains the `Auto-updating` catalogue status, and the public API watch is live for customer, reseller, and administrator invalidations.
 
 ## Next dependency-ordered work
 

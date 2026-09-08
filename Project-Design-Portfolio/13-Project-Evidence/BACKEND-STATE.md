@@ -155,7 +155,7 @@
 
 ### BE-008C Marketplace synchronization
 
-- Status: PASS locally; production deployment pending.
+- Status: PASS locally and deployed on Render.
 - Approved resellers' newly created, fully validated products are immediately active; pending resellers create private drafts which activate when the administrator approves the account.
 - Startup reconciliation applies the same rule to products uploaded before this release, limited to non-deleted drafts owned by approved sellers with active stores.
 - Seller registration, approval/status decisions, product/store changes, stock adjustments, checkout reservations, and payment outcomes publish scope-only marketplace change notifications without exposing seller or customer data.
@@ -183,6 +183,9 @@
 - Administrator verification: the one-time Render-secret bootstrap created a persisted `SystemAdministrator`; the bootstrap values were then cleared; administrator login and the protected application queue return 200 and one current application without exposing credentials in source control.
 - Unified-storefront verification: public product contracts no longer include store identity; seller-specific public lookup/search is removed; internal seller-order partitioning remains unchanged.
 - Final API deploy `dep-dafhlme7bikc738l0h00` reached `live`; post-deploy error-log scan returned no errors.
+- Marketplace synchronization release: source `aa911a5`, Render deploy `dep-dafrf7favr4c73ce88ig`, status `live` on 2026-09-08.
+- Synchronization verification: the public change watch returns the `catalogue`, `seller`, and `resellers` scopes immediately for a new client, completes unchanged waits normally after 20 seconds through Render's proxy, and produced no deployment error logs.
+- Catalogue reconciliation verification: the public catalogue returns the existing `Suede Jacket` (`SK50`) as in stock with 50 units after activating the approved seller's pre-release draft.
 - Free-tier limitation: cold starts can delay the first request after inactivity, and the database remains temporary development infrastructure.
 
 ## Next ready action
