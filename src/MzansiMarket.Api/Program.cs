@@ -136,6 +136,7 @@ if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 }
 
 await AdministratorBootstrap.EnsureAsync(app.Services, builder.Configuration, app.Logger);
+await MarketplaceDataReconciliation.ActivateApprovedSellerDraftsAsync(app.Services, app.Logger);
 
 app.Run();
 
