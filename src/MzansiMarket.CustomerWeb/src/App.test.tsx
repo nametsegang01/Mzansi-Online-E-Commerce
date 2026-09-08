@@ -19,6 +19,7 @@ beforeEach(() => {
   vi.stubGlobal('scrollTo', vi.fn())
   vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
     const url = String(input)
+    if (url.includes('/api/sync/changes')) return new Promise<Response>(() => undefined)
     if (url.includes('/api/categories')) return json([{ id: 'c1', name: 'Home', slug: 'home', parentCategoryId: null, activeProductCount: 1 }])
     if (url.includes('/api/products')) return json({ items: [product], page: 1, pageSize: 48, totalCount: 1, totalPages: 1 })
     return json({ title: 'Unexpected request' }, 404)
@@ -41,18 +42,11 @@ describe('integrated marketplace frontend', () => {
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('search=basket'), expect.anything()))
   })
 
-  it('refreshes the customer catalogue when a marketplace sync event arrives', async () => {
-    const listeners = new Map<string, EventListener>()
-    class TestEventSource {
-      constructor(_url: string) {}
-      addEventListener(type: string, listener: EventListener) { listeners.set(type, listener) }
-      close() {}
-    }
-    vi.stubGlobal('EventSource', TestEventSource)
+  it('refreshes the customer catalogue when the storefront regains focus', async () => {
     render(<App />)
     await screen.findByRole('heading', { name: 'Handwoven Basket' })
     const callsBefore = vi.mocked(fetch).mock.calls.filter(([input]) => String(input).includes('/api/products')).length
-    listeners.get('sync')?.({ data: JSON.stringify({ Scopes: ['catalogue'] }) } as unknown as Event)
+    window.dispatchEvent(new Event('focus'))
     await waitFor(() => expect(vi.mocked(fetch).mock.calls.filter(([input]) => String(input).includes('/api/products')).length).toBeGreaterThan(callsBefore))
   })
 

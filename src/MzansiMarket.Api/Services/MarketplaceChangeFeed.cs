@@ -1,30 +1,19 @@
-using System.Collections.Concurrent;
-using System.Threading.Channels;
-
 namespace MzansiMarket.Api.Services;
 
-public sealed record MarketplaceChange(IReadOnlyCollection<string> Scopes, DateTimeOffset OccurredAt);
+public sealed record MarketplaceChange(long Version, IReadOnlyCollection<string> Scopes, DateTimeOffset OccurredAt);
 
 public sealed class MarketplaceChangeFeed
 {
-    private readonly ConcurrentDictionary<Guid, Channel<MarketplaceChange>> subscribers = new();
+    private readonly object gate = new();
+    private MarketplaceChange current = new(1, ["catalogue", "seller", "resellers"], DateTimeOffset.UtcNow);
+    private TaskCompletionSource<MarketplaceChange> next = NewSignal();
 
-    public (Guid Id, ChannelReader<MarketplaceChange> Reader) Subscribe()
+    public MarketplaceChange Current
     {
-        var id = Guid.NewGuid();
-        var channel = Channel.CreateBounded<MarketplaceChange>(new BoundedChannelOptions(16)
+        get
         {
-            FullMode = BoundedChannelFullMode.DropOldest,
-            SingleReader = true,
-            SingleWriter = false
-        });
-        subscribers[id] = channel;
-        return (id, channel.Reader);
-    }
-
-    public void Unsubscribe(Guid id)
-    {
-        if (subscribers.TryRemove(id, out var channel)) channel.Writer.TryComplete();
+            lock (gate) return current;
+        }
     }
 
     public void Publish(params string[] scopes)
@@ -32,7 +21,42 @@ public sealed class MarketplaceChangeFeed
         var normalized = scopes.Where(scope => !string.IsNullOrWhiteSpace(scope))
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         if (normalized.Length == 0) return;
-        var change = new MarketplaceChange(normalized, DateTimeOffset.UtcNow);
-        foreach (var channel in subscribers.Values) channel.Writer.TryWrite(change);
+
+        MarketplaceChange change;
+        TaskCompletionSource<MarketplaceChange> completed;
+        lock (gate)
+        {
+            change = current = new MarketplaceChange(current.Version + 1, normalized, DateTimeOffset.UtcNow);
+            completed = next;
+            next = NewSignal();
+        }
+
+        completed.TrySetResult(change);
     }
+
+    public async Task<MarketplaceChange> WaitForChangeAsync(
+        long afterVersion,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        Task<MarketplaceChange> pending;
+        lock (gate)
+        {
+            if (current.Version > afterVersion) return current;
+            pending = next.Task;
+        }
+
+        try
+        {
+            return await pending.WaitAsync(timeout, cancellationToken);
+        }
+        catch (TimeoutException)
+        {
+            var snapshot = Current;
+            return new MarketplaceChange(snapshot.Version, [], snapshot.OccurredAt);
+        }
+    }
+
+    private static TaskCompletionSource<MarketplaceChange> NewSignal() =>
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

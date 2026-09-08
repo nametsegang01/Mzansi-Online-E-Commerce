@@ -159,7 +159,7 @@
 - Approved resellers' newly created, fully validated products are immediately active; pending resellers create private drafts which activate when the administrator approves the account.
 - Startup reconciliation applies the same rule to products uploaded before this release, limited to non-deleted drafts owned by approved sellers with active stores.
 - Seller registration, approval/status decisions, product/store changes, stock adjustments, checkout reservations, and payment outcomes publish scope-only marketplace change notifications without exposing seller or customer data.
-- A public server-sent event stream distributes those invalidations to customer, reseller, and administrator clients, with per-IP concurrent-connection limiting and periodic keep-alives.
+- A public event-driven long-poll endpoint distributes those invalidations through Render's proxy to customer, reseller, and administrator clients, with per-IP concurrent-request limiting and bounded waits.
 - No database migration or API response-contract change is required.
 - Validation: full API suite passes 31/31, including existing-data reconciliation, release build has zero warnings/errors, and formatting verification passes.
 

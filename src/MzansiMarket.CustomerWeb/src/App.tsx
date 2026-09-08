@@ -41,11 +41,27 @@ export function App() {
     const refresh = (scopes: SyncScope[] = ['catalogue', 'seller', 'resellers']) => setSync(current => ({ version: current.version + 1, scopes }))
     const focus = () => refresh()
     const visible = () => { if (document.visibilityState === 'visible') refresh() }
-    const interval = window.setInterval(() => { if (document.visibilityState === 'visible') refresh() }, 30000)
     window.addEventListener('focus', focus); document.addEventListener('visibilitychange', visible)
-    const source = typeof EventSource === 'undefined' ? null : new EventSource(api.syncStreamUrl())
-    source?.addEventListener('sync', event => { try { const payload = JSON.parse((event as MessageEvent).data) as { Scopes?: SyncScope[]; scopes?: SyncScope[] }; refresh(payload.scopes ?? payload.Scopes ?? ['catalogue', 'seller', 'resellers']) } catch { refresh() } })
-    return () => { source?.close(); window.clearInterval(interval); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', visible) }
+    let active = true, after = 0, controller: AbortController | null = null
+    async function watch() {
+      while (active) {
+        controller = new AbortController()
+        try {
+          const change = await api.waitForSync(after, controller.signal)
+          if (!active) return
+          if (change.version > after) {
+            after = change.version
+            if (change.scopes.length) refresh(change.scopes)
+          }
+        } catch {
+          if (!active) return
+          refresh()
+          await new Promise(resolve => window.setTimeout(resolve, 3000))
+        }
+      }
+    }
+    void watch()
+    return () => { active = false; controller?.abort(); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', visible) }
   }, [])
   useEffect(() => { if (!sync.version || !sync.scopes.includes('catalogue')) return; void loadProducts(true); void api.categories().then(setCategories).catch(() => undefined); if (customer) void loadCart() }, [customer, loadCart, loadProducts, sync])
   function navigate(next: View) { if (next !== 'shop' && !user) return setAuthMode('login'); setView(next); setMenuOpen(false); if (next === 'shop') { void loadProducts(true); void api.categories().then(setCategories).catch(() => undefined) } window.scrollTo({ top: 0, behavior: 'smooth' }) }

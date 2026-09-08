@@ -5,18 +5,18 @@ namespace MzansiMarket.Api.Tests;
 public sealed class MarketplaceChangeFeedTests
 {
     [Fact]
-    public async Task Publish_NotifiesActiveSubscribersWithoutDuplicatingScopes()
+    public async Task Publish_CompletesWaitingRequestWithoutDuplicatingScopes()
     {
         var feed = new MarketplaceChangeFeed();
-        var subscription = feed.Subscribe();
+        var initial = feed.Current;
+        var pending = feed.WaitForChangeAsync(initial.Version, TimeSpan.FromSeconds(2), CancellationToken.None);
 
         feed.Publish("catalogue", "seller", "catalogue");
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var change = await subscription.Reader.ReadAsync(timeout.Token);
+        var change = await pending;
 
+        Assert.True(change.Version > initial.Version);
         Assert.Equal(2, change.Scopes.Count);
         Assert.Contains("catalogue", change.Scopes);
         Assert.Contains("seller", change.Scopes);
-        feed.Unsubscribe(subscription.Id);
     }
 }

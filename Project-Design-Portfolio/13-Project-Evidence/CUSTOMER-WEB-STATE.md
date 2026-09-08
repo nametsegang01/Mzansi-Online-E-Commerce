@@ -60,9 +60,9 @@
    - Validation: all 9 frontend interaction tests pass and the TypeScript/Vite production build succeeds.
 
 8. `FE-008 Cross-role live synchronization` — PASS locally
-   - The application maintains one marketplace change stream and revalidates only the affected customer catalogue, reseller workspace, or administrator application queue.
+   - The application maintains one event-driven marketplace change watch and revalidates only the affected customer catalogue, reseller workspace, or administrator application queue.
    - Customer product/category/stock views, reseller approval/catalogue/order state, and administrator reseller applications update without a full-page reload or loading-state flash.
-   - Browser focus, tab visibility, and a 30-second visible-tab interval provide recovery when a live event connection is interrupted.
+   - Browser focus, tab visibility, and automatic retry provide recovery when a live update request is interrupted.
    - Approved resellers see `Add & publish product`; pending reseller products remain private drafts and publish automatically when the administrator approves the account.
    - Validation: all 12 frontend interaction tests pass, including customer, reseller, and administrator synchronization, and the production build succeeds.
 

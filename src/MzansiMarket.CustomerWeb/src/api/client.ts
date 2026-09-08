@@ -104,7 +104,8 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
 }
 
 export const api = {
-  syncStreamUrl: () => `${API_URL}/api/sync/stream`,
+  waitForSync: (after: number, signal?: AbortSignal) =>
+    request<{ version: number; scopes: Array<'catalogue' | 'seller' | 'resellers'> }>(`/api/sync/changes?after=${after}`, { signal }),
   hasSession: () => Boolean(readSession()?.accessToken),
   clearSession: () => saveSession(null),
   categories: () => request<Category[]>('/api/categories'),
