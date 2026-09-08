@@ -18,7 +18,8 @@ public static class MarketplaceSyncEndpoints
         http.Response.Headers.CacheControl = "no-cache, no-store";
         http.Response.Headers.Append("X-Accel-Buffering", "no");
         http.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
-        var proxyFlushPadding = new string(' ', 2048);
+        await http.Response.StartAsync(cancellationToken);
+        var proxyFlushPadding = new string(' ', 16 * 1024);
         await http.Response.WriteAsync($": connected {proxyFlushPadding}\nretry: 3000\n\n", cancellationToken);
         await http.Response.Body.FlushAsync(cancellationToken);
 
