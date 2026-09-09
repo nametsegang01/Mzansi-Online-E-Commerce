@@ -230,8 +230,6 @@ public static class SellerCatalogueEndpoints
         if (!string.IsNullOrWhiteSpace(request.ImageUrl) &&
             (!Uri.TryCreate(request.ImageUrl, UriKind.Absolute, out uri) || uri.Scheme != Uri.UriSchemeHttps))
             errors["ImageUrl"] = ["Product images must use a public HTTPS URL."];
-        if (!string.IsNullOrWhiteSpace(request.ImageUrl) && string.IsNullOrWhiteSpace(request.ImageAltText))
-            errors["ImageAltText"] = ["Describe the product image for customers using assistive technology."];
         var sku = request.Sku.Trim().ToUpperInvariant(); var slug = request.Slug.Trim().ToLowerInvariant();
         if (await db.Products.IgnoreQueryFilters().AnyAsync(x => x.Sku == sku && x.Id != productId, ct)) errors["Sku"] = ["This SKU is already in use."];
         if (await db.Products.IgnoreQueryFilters().AnyAsync(x => x.Slug == slug && x.Id != productId && x.StoreId == storeId, ct))
@@ -248,7 +246,7 @@ public static class SellerCatalogueEndpoints
             primary = new ProductImage { Product = product, StorageKey = $"external/{product.Id:N}/primary" };
             product.Images.Add(primary);
         }
-        primary.PublicUrl = url.Trim(); primary.AltText = alt!.Trim(); primary.SortOrder = 0; primary.IsPrimary = true;
+        primary.PublicUrl = url.Trim(); primary.AltText = Clean(alt) ?? product.Name; primary.SortOrder = 0; primary.IsPrimary = true;
         foreach (var extra in product.Images.Where(x => x != primary).ToArray()) product.Images.Remove(extra);
     }
     private static SellerStoreResponse ToStore(Store store) => new(store.Id, store.Name, store.Slug, store.Description,

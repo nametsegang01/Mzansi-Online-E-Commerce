@@ -65,6 +65,9 @@ describe('integrated marketplace frontend', () => {
     expect(screen.getByRole('dialog', { name: 'Open your seller studio' })).toBeInTheDocument()
     expect(screen.getByLabelText('Trading name')).toBeInTheDocument()
     expect(screen.getByLabelText('Store address')).not.toHaveAttribute('pattern')
+    expect(screen.getByLabelText('Mobile number (optional)')).not.toBeRequired()
+    expect(screen.getByLabelText('Registration number (optional)')).not.toBeRequired()
+    expect(screen.getByLabelText('Support email (optional)')).not.toBeRequired()
     expect(screen.getByText(/seller accounts start as pending/i)).toBeInTheDocument()
   })
 

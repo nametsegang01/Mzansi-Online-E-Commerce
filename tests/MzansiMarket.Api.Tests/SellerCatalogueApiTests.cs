@@ -28,6 +28,7 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
         Assert.Equal(HttpStatusCode.Created, create.StatusCode);
         using var created = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
         Assert.Equal("Active", created.RootElement.GetProperty("status").GetString());
+        Assert.Equal($"Local reseller item {seller.Suffix}", created.RootElement.GetProperty("imageAltText").GetString());
 
         using var publicClient = factory.CreateApiClient();
         Assert.Equal(1, await PublicCountAsync(publicClient, seller.Suffix));
@@ -131,7 +132,7 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
     }
 
     [Fact]
-    public async Task ProductValidation_RequiresActiveCategoryHttpsImageAndAltText()
+    public async Task ProductValidation_RequiresActiveCategoryAndHttpsImageButKeepsImageDescriptionOptional()
     {
         var seller = await RegisterSellerAsync("validation");
         using var client = Client(seller.Token);
@@ -151,7 +152,7 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
         var errors = body.RootElement.GetProperty("errors");
         Assert.True(errors.TryGetProperty("CategoryIds", out _));
         Assert.True(errors.TryGetProperty("ImageUrl", out _));
-        Assert.True(errors.TryGetProperty("ImageAltText", out _));
+        Assert.False(errors.TryGetProperty("ImageAltText", out _));
     }
 
     private HttpClient Client(string token)
@@ -211,7 +212,7 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
         price = 349.95m,
         categoryIds = new[] { categoryId },
         imageUrl = "https://images.example.test/reseller-item.jpg",
-        imageAltText = "A local reseller product",
+        imageAltText = (string?)null,
         initialStock = 12,
         reorderLevel = 3
     };

@@ -137,7 +137,7 @@
 
 - Acceptance criteria:
   - Active reseller accounts can manage their own store profile and prepare draft products while approval is pending.
-  - Product creation and editing enforce unique SKU/store slug, positive ZAR pricing, active categories, public HTTPS image URLs, and accessible image descriptions.
+  - Product creation and editing enforce unique SKU/store slug, positive ZAR pricing, active categories, and public HTTPS image URLs. Image descriptions are optional; omitted descriptions use the product name as accessible fallback text.
   - Stock adjustments cannot reduce on-hand quantity below customer reservations and append inventory transaction evidence.
   - Cross-seller reads, edits, inventory changes, publication, and archival return no owned resource.
   - A system administrator can approve, reject, or suspend a reseller; approval activates the store.
@@ -175,7 +175,7 @@
 
 - Email delivery, confirmation links, password-reset delivery, and optional MFA depend on the notification work unit. They are not to be falsely represented as active until a sandbox notification adapter exists.
 - The current Render Free PostgreSQL database expires and has no retained backups; it is not suitable for real users or production transactions.
-- Direct product-image upload storage and the sandbox payment provider remain unselected implementation dependencies. Resellers can currently attach public HTTPS image URLs with required alt text.
+- Direct product-image upload storage and the sandbox payment provider remain unselected implementation dependencies. Resellers can currently attach public HTTPS image URLs; a supplied image description is preserved and an omitted one falls back to the product name.
 - Database persistence protects key-ring availability, not key confidentiality by itself. Before a real production launch, wrap data-protection keys with an approved certificate or external key-encryption mechanism and verify restoration.
 
 ## Render release checkpoint

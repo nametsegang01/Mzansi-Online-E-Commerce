@@ -31,11 +31,15 @@ describe('reseller workspace', () => {
     await browser.type(screen.getByLabelText('Product name'), 'Woven basket')
     await browser.type(screen.getByLabelText('SKU'), 'UG-1')
     await browser.type(screen.getByLabelText('Price in rand'), '250')
+    expect(screen.getByLabelText('Description (optional)')).not.toBeRequired()
+    expect(screen.getByLabelText('Public image URL (optional)')).not.toBeRequired()
+    expect(screen.getByLabelText('Image description (optional)')).not.toBeRequired()
+    await browser.type(screen.getByLabelText('Public image URL (optional)'), 'https://images.example.test/basket.jpg')
     await browser.click(screen.getByRole('checkbox', { name: 'Home' }))
     await browser.clear(screen.getByLabelText('Opening stock'))
     await browser.type(screen.getByLabelText('Opening stock'), '8')
     await browser.click(screen.getByRole('button', { name: /create draft product/i }))
-    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Woven basket', slug: 'woven-basket', categoryIds: ['category-1'], initialStock: 8 })))
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Woven basket', slug: 'woven-basket', categoryIds: ['category-1'], imageUrl: 'https://images.example.test/basket.jpg', imageAltText: null, initialStock: 8 })))
   })
 
   it('publishes a draft when the store is approved', async () => {

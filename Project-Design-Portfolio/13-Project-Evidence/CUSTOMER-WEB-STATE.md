@@ -4,7 +4,7 @@
 
 - Objective: deliver one responsive marketplace web application for customer, reseller, and administrator accounts.
 - Application: `src/MzansiMarket.CustomerWeb`.
-- Current phase: reseller administration and unified customer storefront through BE-008B.
+- Current phase: shared, responsive customer, reseller, and administrator journeys through FE-010.
 - Production API default: `https://mzansi-market-api.onrender.com`.
 
 ## Architecture and decisions
@@ -71,6 +71,12 @@
    - Email and password changes require the current password and deliberately end the local session so the new credentials must be used immediately.
    - The layouts remain responsive and use the existing accessible sheet, focus, error, and announcement patterns.
    - Validation: all 13 frontend interaction tests pass, including administrator access to the complete shared account screen, and the TypeScript/Vite production build succeeds.
+
+10. `FE-010 Responsive and truthful forms` — PASS locally
+   - Customer, reseller, and administrator form controls remain within narrow viewports, stack multi-column fields on mobile, avoid automatic iOS input zoom, and leave safe scrolling space above mobile browser controls and software keyboards.
+   - Optional status is explicit in the shared field component instead of being inferred from label text. Every field labelled `(optional)` now omits browser-required validation.
+   - Reseller store descriptions, support emails, and product descriptions are now visibly labelled optional. Product image descriptions may be left blank; the API supplies the product name as accessible fallback text when an image URL is present.
+   - Validation: all 13 frontend interaction tests pass and the TypeScript/Vite production build succeeds. The .NET 10 test suite remains covered by its updated API regression test and will be compiled by the Render release because this machine currently exposes only the .NET 8 SDK.
 
 ## Backend dependencies that prevent a truthful “entire system” frontend
 
