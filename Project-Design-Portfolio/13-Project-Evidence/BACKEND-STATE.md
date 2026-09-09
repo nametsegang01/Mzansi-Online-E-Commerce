@@ -60,7 +60,7 @@
 
 ### BE-001B Shared account security and self-service
 
-- Status: PASS locally; production deployment pending.
+- Status: PASS locally and deployed on Render.
 - ASP.NET Core Identity remains the single password authority for customer, reseller, and administrator accounts; registration and password changes store only salted Identity password hashes, never plaintext credentials.
 - Every active account can retrieve and update its display name and mobile number, securely change its sign-in email or password by confirming the current password, invalidate all sessions, and manage only its own saved addresses.
 - Password and email changes rotate account security state and require the user to sign in again. Audit records contain the action but never passwords or password hashes.
@@ -194,6 +194,8 @@
 - Marketplace synchronization release: source `aa911a5`, Render deploy `dep-dafrf7favr4c73ce88ig`, status `live` on 2026-09-08.
 - Synchronization verification: the public change watch returns the `catalogue`, `seller`, and `resellers` scopes immediately for a new client, completes unchanged waits normally after 20 seconds through Render's proxy, and produced no deployment error logs.
 - Catalogue reconciliation verification: the public catalogue returns the existing `Suede Jacket` (`SK50`) as in stock with 50 units after activating the approved seller's pre-release draft.
+- Shared account-security release: source `cc6b362`, Render deploy `dep-daggqpmk1f9s73ag73g0`, status `live` on 2026-09-09.
+- Production account verification: fictional customer registration returned 201; profile/mobile update and owned-address creation succeeded; password and email changes returned 204; login with the new email and new password returned 200; database health remained 200.
 - Free-tier limitation: cold starts can delay the first request after inactivity, and the database remains temporary development infrastructure.
 
 ## Next ready action

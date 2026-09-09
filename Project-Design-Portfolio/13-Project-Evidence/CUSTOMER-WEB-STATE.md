@@ -66,7 +66,7 @@
    - Approved resellers see `Add & publish product`; pending reseller products remain private drafts and publish automatically when the administrator approves the account.
    - Validation: all 12 frontend interaction tests pass, including customer, reseller, and administrator synchronization, and the production build succeeds.
 
-9. `FE-009 Shared account settings` — PASS locally
+9. `FE-009 Shared account settings` — PASS locally and deployed on Render
    - Customer, reseller, and administrator accounts share one account-settings experience for personal name, mobile number, sign-in email, password, saved delivery/billing addresses, normal sign-out, and sign-out on every device.
    - Email and password changes require the current password and deliberately end the local session so the new credentials must be used immediately.
    - The layouts remain responsive and use the existing accessible sheet, focus, error, and announcement patterns.
@@ -96,6 +96,8 @@
 - Public verification: root returns 200; deployed bundle contains `Reseller approvals` and `One trusted checkout`, omits the former independent-seller customer copy, and the deployment error-log scan is empty.
 - Cross-role synchronization release: source `aa911a5`, Render deploy `dep-dafrf7favr4c73ce88p0`, status `live` on 2026-09-08.
 - Synchronization CDN verification: the deployed bundle uses `/api/sync/changes`, retains the `Auto-updating` catalogue status, and the public API watch is live for customer, reseller, and administrator invalidations.
+- Shared account-settings release: source `cc6b362`, Render deploy `dep-daggqpmk1f9s73ag73mg`, status `live` on 2026-09-09.
+- Account-settings CDN verification: the deployed bundle contains the shared account-management, password-change, and email-change flows; the live API verification passed profile, mobile, address, password, email, and new-credential login checks.
 
 ## Next dependency-ordered work
 
