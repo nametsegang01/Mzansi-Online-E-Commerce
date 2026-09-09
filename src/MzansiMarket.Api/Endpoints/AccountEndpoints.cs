@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Text.Json;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Contracts;
@@ -17,9 +19,24 @@ public static class AccountEndpoints
 
     public static IEndpointRouteBuilder MapAccountEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/api/account/addresses")
-            .WithTags("Customer account")
-            .RequireAuthorization(AuthorizationPolicies.CustomerAccess);
+        var account = endpoints.MapGroup("/api/account")
+            .WithTags("Account")
+            .RequireAuthorization(AuthorizationPolicies.ActiveAccount);
+
+        account.MapGet("/profile", GetProfileAsync).Produces<AccountProfileResponse>();
+        account.MapPut("/profile", UpdateProfileAsync)
+            .Produces<AccountProfileResponse>()
+            .ProducesValidationProblem();
+        account.MapPost("/change-email", ChangeEmailAsync)
+            .RequireRateLimiting("authentication")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem();
+        account.MapPost("/change-password", ChangePasswordAsync)
+            .RequireRateLimiting("authentication")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem();
+
+        var group = account.MapGroup("/addresses");
 
         group.MapGet("/", GetAddressesAsync).Produces<IReadOnlyCollection<AddressResponse>>();
         group.MapPost("/", CreateAddressAsync)
@@ -35,6 +52,152 @@ public static class AccountEndpoints
 
         return endpoints;
     }
+
+    private static async Task<IResult> GetProfileAsync(
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        MarketplaceDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null) return Results.Unauthorized();
+        var profileMobile = await dbContext.CustomerProfiles.AsNoTracking()
+            .Where(profile => profile.UserId == user.Id)
+            .Select(profile => profile.MobileNumber)
+            .SingleOrDefaultAsync(cancellationToken);
+        return Results.Ok(new AccountProfileResponse(user.DisplayName, user.Email!, user.PhoneNumber ?? profileMobile));
+    }
+
+    private static async Task<IResult> UpdateProfileAsync(
+        AccountProfileRequest request,
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        MarketplaceDbContext dbContext,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var errors = EndpointValidation.Validate(request);
+        if (request.DisplayName.Trim().Length < 2)
+        {
+            errors["DisplayName"] = ["Full name must contain at least two visible characters."];
+        }
+        if (errors.Count > 0) return Results.ValidationProblem(errors);
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null) return Results.Unauthorized();
+
+        var displayName = request.DisplayName.Trim();
+        var mobileNumber = NullIfWhiteSpace(request.MobileNumber);
+        user.DisplayName = displayName;
+        var mobileNumberChanged = !string.Equals(user.PhoneNumber, mobileNumber, StringComparison.Ordinal);
+        if (mobileNumberChanged)
+        {
+            user.PhoneNumber = mobileNumber;
+            user.PhoneNumberConfirmed = false;
+        }
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded) return Results.ValidationProblem(EndpointValidation.FromIdentity(result));
+
+        var customer = await dbContext.CustomerProfiles.SingleOrDefaultAsync(profile => profile.UserId == user.Id, cancellationToken);
+        if (customer is not null)
+        {
+            customer.MobileNumber = mobileNumber;
+            customer.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+        AddAudit(dbContext, user.Id, "ProfileUpdated", new { mobileNumberChanged }, httpContext);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Results.Ok(new AccountProfileResponse(displayName, user.Email!, mobileNumber));
+    }
+
+    private static async Task<IResult> ChangeEmailAsync(
+        ChangeEmailRequest request,
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        MarketplaceDbContext dbContext,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var errors = EndpointValidation.Validate(request);
+        if (errors.Count > 0) return Results.ValidationProblem(errors);
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null) return Results.Unauthorized();
+        if (!await userManager.CheckPasswordAsync(user, request.CurrentPassword))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["CurrentPassword"] = ["The current password is incorrect."] });
+        }
+
+        var newEmail = request.NewEmail.Trim();
+        var existing = await userManager.FindByEmailAsync(newEmail);
+        if (existing is not null && existing.Id != user.Id)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["NewEmail"] = ["That email address is already in use."] });
+        }
+
+        user.Email = newEmail;
+        user.UserName = newEmail;
+        user.EmailConfirmed = false;
+        user.SecurityStamp = Guid.NewGuid().ToString();
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded) return Results.ValidationProblem(EndpointValidation.FromIdentity(result));
+
+        AddAudit(dbContext, user.Id, "EmailChanged", new { emailChanged = true }, httpContext);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> ChangePasswordAsync(
+        ChangePasswordRequest request,
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        MarketplaceDbContext dbContext,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var errors = EndpointValidation.Validate(request);
+        if (request.CurrentPassword == request.NewPassword)
+        {
+            errors["NewPassword"] = ["Choose a new password that is different from the current password."];
+        }
+        if (errors.Count > 0) return Results.ValidationProblem(errors);
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null) return Results.Unauthorized();
+
+        var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var identityErrors = result.Errors.ToArray();
+            var currentPasswordWrong = identityErrors.Any(error => error.Code == "PasswordMismatch");
+            if (currentPasswordWrong)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["CurrentPassword"] = ["The current password is incorrect."] });
+            }
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["NewPassword"] = identityErrors.Select(error => error.Description).Distinct().ToArray()
+            });
+        }
+
+        AddAudit(dbContext, user.Id, "PasswordChanged", null, httpContext);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Results.NoContent();
+    }
+
+    private static void AddAudit(
+        MarketplaceDbContext dbContext,
+        Guid userId,
+        string action,
+        object? changes,
+        HttpContext httpContext) => dbContext.AuditEntries.Add(new AuditEntry
+        {
+            UserId = userId,
+            EntityType = nameof(ApplicationUser),
+            EntityId = userId.ToString(),
+            Action = action,
+            ChangesJson = changes is null ? null : JsonSerializer.Serialize(changes),
+            CorrelationId = httpContext.TraceIdentifier,
+            OccurredAt = DateTimeOffset.UtcNow
+        });
 
     private static async Task<IResult> GetAddressesAsync(
         ClaimsPrincipal principal,
@@ -193,4 +356,7 @@ public static class AccountEndpoints
 
     private static Guid GetUserId(ClaimsPrincipal principal) =>
         Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

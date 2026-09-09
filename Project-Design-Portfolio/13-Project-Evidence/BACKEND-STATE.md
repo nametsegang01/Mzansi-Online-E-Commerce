@@ -58,6 +58,14 @@
 - Validation: 10/10 automated tests passed; release build produced zero warnings/errors; EF reports no pending model changes; NuGet audit reports no vulnerable API packages.
 - Release result: DATA-002 is applied and the public registration, login, refresh, current-user, invalid-login, database-health, and production-CORS checks pass.
 
+### BE-001B Shared account security and self-service
+
+- Status: PASS locally; production deployment pending.
+- ASP.NET Core Identity remains the single password authority for customer, reseller, and administrator accounts; registration and password changes store only salted Identity password hashes, never plaintext credentials.
+- Every active account can retrieve and update its display name and mobile number, securely change its sign-in email or password by confirming the current password, invalidate all sessions, and manage only its own saved addresses.
+- Password and email changes rotate account security state and require the user to sign in again. Audit records contain the action but never passwords or password hashes.
+- Validation: full API suite passes 34/34, including stored-hash verification, current-password rejection, new credential login, seller profile synchronization, administrator profile access, and administrator-owned address management. No database migration is required because the existing Identity and address schema is reused.
+
 ### BE-002 Public catalogue
 
 - Acceptance criteria:

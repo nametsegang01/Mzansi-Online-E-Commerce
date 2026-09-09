@@ -2,6 +2,35 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MzansiMarket.Api.Contracts;
 
+public sealed class AccountProfileRequest
+{
+    [Required, StringLength(200, MinimumLength = 2)]
+    public string DisplayName { get; init; } = string.Empty;
+
+    [Phone, StringLength(32)]
+    public string? MobileNumber { get; init; }
+}
+
+public sealed record AccountProfileResponse(string DisplayName, string Email, string? MobileNumber);
+
+public sealed class ChangeEmailRequest
+{
+    [Required, EmailAddress, StringLength(256)]
+    public string NewEmail { get; init; } = string.Empty;
+
+    [Required, StringLength(128)]
+    public string CurrentPassword { get; init; } = string.Empty;
+}
+
+public sealed class ChangePasswordRequest
+{
+    [Required, StringLength(128)]
+    public string CurrentPassword { get; init; } = string.Empty;
+
+    [Required, StringLength(128, MinimumLength = 12)]
+    public string NewPassword { get; init; } = string.Empty;
+}
+
 public sealed class AddressRequest
 {
     [Required]

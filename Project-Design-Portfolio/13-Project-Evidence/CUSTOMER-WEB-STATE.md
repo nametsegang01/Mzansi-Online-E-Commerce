@@ -66,6 +66,12 @@
    - Approved resellers see `Add & publish product`; pending reseller products remain private drafts and publish automatically when the administrator approves the account.
    - Validation: all 12 frontend interaction tests pass, including customer, reseller, and administrator synchronization, and the production build succeeds.
 
+9. `FE-009 Shared account settings` — PASS locally
+   - Customer, reseller, and administrator accounts share one account-settings experience for personal name, mobile number, sign-in email, password, saved delivery/billing addresses, normal sign-out, and sign-out on every device.
+   - Email and password changes require the current password and deliberately end the local session so the new credentials must be used immediately.
+   - The layouts remain responsive and use the existing accessible sheet, focus, error, and announcement patterns.
+   - Validation: all 13 frontend interaction tests pass, including administrator access to the complete shared account screen, and the TypeScript/Vite production build succeeds.
+
 ## Backend dependencies that prevent a truthful “entire system” frontend
 
 - `BE-007`: cancellations, returns, refunds, customer order history, and refund status endpoints.

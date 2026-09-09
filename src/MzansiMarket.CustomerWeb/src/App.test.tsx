@@ -68,6 +68,32 @@ describe('integrated marketplace frontend', () => {
     expect(screen.getByText(/seller accounts start as pending/i)).toBeInTheDocument()
   })
 
+  it('gives administrators the same complete account settings as other users', async () => {
+    const user = userEvent.setup()
+    sessionStorage.setItem('mzansi-market-session', JSON.stringify({ accessToken: 'access', refreshToken: 'refresh', expiresIn: 3600, expiresAt: Date.now() + 3600000 }))
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/sync/changes')) return new Promise<Response>(() => undefined)
+      if (url.includes('/api/auth/me')) return json({ userId: 'admin-1', email: 'admin@example.test', displayName: 'Market Administrator', accountStatus: 'Active', emailConfirmed: true, roles: ['SystemAdministrator'], customer: null, seller: null })
+      if (url.includes('/api/account/profile')) return json({ displayName: 'Market Administrator', email: 'admin@example.test', mobileNumber: '+27 83 222 3344' })
+      if (url.includes('/api/account/addresses')) return json([])
+      if (url.includes('/api/admin/sellers/applications')) return json([])
+      if (url.includes('/api/categories')) return json([])
+      if (url.includes('/api/products')) return json({ items: [], page: 1, pageSize: 48, totalCount: 0, totalPages: 0 })
+      return json({ title: 'Unexpected request' }, 404)
+    })
+    render(<App />)
+    await user.click(await screen.findByRole('button', { name: 'My account' }))
+    expect(await screen.findByRole('heading', { name: 'Personal details' })).toBeInTheDocument()
+    expect(screen.getByText('+27 83 222 3344')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Change password' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Change email' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add address' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sign out on every device' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Change password' }))
+    expect(screen.getByRole('dialog', { name: 'Change password' })).toBeInTheDocument()
+  })
+
   it('lets a signed-in reseller log out from the account menu', async () => {
     const user = userEvent.setup()
     sessionStorage.setItem('mzansi-market-session', JSON.stringify({ accessToken: 'access', refreshToken: 'refresh', expiresIn: 3600, expiresAt: Date.now() + 3600000 }))

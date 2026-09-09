@@ -30,6 +30,12 @@ export type CurrentUser = {
   seller: SellerProfile | null
 }
 
+export type AccountProfile = {
+  displayName: string
+  email: string
+  mobileNumber: string | null
+}
+
 export type RegistrationResponse = {
   userId: string
   email: string

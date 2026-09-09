@@ -1,4 +1,5 @@
 import type {
+  AccountProfile,
   Address,
   AddressInput,
   ApiProblem,
@@ -120,6 +121,16 @@ export const api = {
   me: () => request<CurrentUser>('/api/auth/me'),
   logout: async (everywhere = false) => {
     try { await request<void>(everywhere ? '/api/auth/logout-all' : '/api/auth/logout', { method: 'POST' }) } finally { saveSession(null) }
+  },
+  accountProfile: () => request<AccountProfile>('/api/account/profile'),
+  updateAccountProfile: (body: { displayName: string; mobileNumber: string | null }) => request<AccountProfile>('/api/account/profile', { method: 'PUT', body: JSON.stringify(body) }),
+  changeEmail: async (newEmail: string, currentPassword: string) => {
+    await request<void>('/api/account/change-email', { method: 'POST', body: JSON.stringify({ newEmail, currentPassword }) })
+    saveSession(null)
+  },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    await request<void>('/api/account/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) })
+    saveSession(null)
   },
   addresses: () => request<Address[]>('/api/account/addresses'),
   addAddress: (body: AddressInput) => request<Address>('/api/account/addresses', { method: 'POST', body: JSON.stringify(body) }),

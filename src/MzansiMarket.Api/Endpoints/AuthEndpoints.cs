@@ -77,6 +77,7 @@ public static class AuthEndpoints
         var firstName = request.FirstName.Trim();
         var lastName = request.LastName.Trim();
         var user = CreateUser(email, $"{firstName} {lastName}");
+        user.PhoneNumber = NullIfWhiteSpace(request.MobileNumber);
 
         return await ExecuteRegistrationAsync(
             user,
@@ -138,6 +139,7 @@ public static class AuthEndpoints
         var lastName = request.LastName.Trim();
         var tradingName = request.TradingName.Trim();
         var user = CreateUser(email, $"{firstName} {lastName}");
+        user.PhoneNumber = NullIfWhiteSpace(request.MobileNumber);
 
         return await ExecuteRegistrationAsync(
             user,
