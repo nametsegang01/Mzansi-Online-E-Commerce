@@ -31,7 +31,7 @@ describe('integrated marketplace frontend', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: /proudly local/i })).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Handwoven Basket' })).toBeInTheDocument()
-    expect(screen.getByText(/Auto-updating/)).toHaveTextContent('Auto-updating · 1 products')
+    expect(screen.queryByText(/Auto-updating/)).not.toBeInTheDocument()
     expect(screen.queryByText('Ubuntu Weaves')).not.toBeInTheDocument()
   })
 

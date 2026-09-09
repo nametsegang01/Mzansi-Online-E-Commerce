@@ -848,15 +848,6 @@ label small { color:var(--muted);font-weight:500 }
   background: rgb(255 255 255 / 15%);
 }
 
-.result-count {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.result-count { display: inline-flex; align-items: center; gap: .4rem; }
-.live-dot { width: .45rem; height: .45rem; border-radius: 50%; background: #5c9278; box-shadow: 0 0 0 .22rem rgb(92 146 120 / 12%); }
-
 .product-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

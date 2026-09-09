@@ -61,6 +61,7 @@
 
 8. `FE-008 Cross-role live synchronization` — PASS locally and deployed on Render
    - The application maintains one event-driven marketplace change watch and revalidates only the affected customer catalogue, reseller workspace, or administrator application queue.
+   - Synchronization remains silent on the customer storefront; implementation-status text is not presented as shopping content.
    - Customer product/category/stock views, reseller approval/catalogue/order state, and administrator reseller applications update without a full-page reload or loading-state flash.
    - Browser focus, tab visibility, and automatic retry provide recovery when a live update request is interrupted.
    - Approved resellers see `Add & publish product`; pending reseller products remain private drafts and publish automatically when the administrator approves the account.
