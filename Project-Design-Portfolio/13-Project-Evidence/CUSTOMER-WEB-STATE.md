@@ -57,6 +57,7 @@
    - Reduced card elevation and hover travel, simplified category controls, softened form focus treatment, and made navigation and transactional surfaces more consistent.
    - Added subtle view-entry and direct press feedback, spatially consistent desktop side sheets and mobile bottom sheets, plus touch-device hover suppression.
    - Preserved explicit focus indicators and reduced-motion, reduced-transparency, increased-contrast, and forced-colour fallbacks.
+   - Authentication uses a balanced centered dialog on desktop, expanding for registration forms, while retaining the compact mobile bottom sheet.
    - Validation: all 9 frontend interaction tests pass and the TypeScript/Vite production build succeeds.
 
 8. `FE-008 Cross-role live synchronization` — PASS locally and deployed on Render

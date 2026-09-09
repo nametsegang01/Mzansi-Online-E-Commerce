@@ -1939,16 +1939,26 @@ main > :first-child:not(.workspace):not(.hero-section) { animation: content-sett
 .admin-session { background: rgb(255 254 250 / 72%); box-shadow: 0 5px 20px rgb(31 45 41 / 5%); }
 
 .sheet-layer { background: rgb(25 34 31 / 28%); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: soft-fade 180ms ease both; }
+.sheet-layer--centered { align-items: center; justify-content: center; padding: clamp(1rem, 4vw, 3rem); }
 .sheet {
   border-left: 1px solid rgb(255 255 255 / 70%);
   background: rgb(247 246 242 / 96%);
   box-shadow: -24px 0 70px rgb(24 33 30 / 16%);
   animation: sheet-settle 360ms cubic-bezier(.2,.78,.25,1) both;
 }
+.sheet--centered {
+  height: auto;
+  max-height: calc(100dvh - clamp(2rem, 8vw, 6rem));
+  border: 1px solid rgb(255 255 255 / 78%);
+  border-radius: 1.5rem;
+  box-shadow: 0 28px 90px rgb(24 33 30 / 24%);
+  animation-name: modal-settle;
+}
 .sheet > header { border-bottom-color: rgb(31 45 41 / 8%); background: rgb(247 246 242 / 84%); }
 .sheet > header h2 { font-weight: 540; }
 @keyframes soft-fade { from { opacity: 0; } }
 @keyframes sheet-settle { from { opacity: .7; transform: translateX(26px); } }
+@keyframes modal-settle { from { opacity: .7; transform: translateY(16px) scale(.985); } }
 
 .notice { border-color: transparent; box-shadow: inset 0 0 0 1px currentColor; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 18%, transparent); }
 .empty-state { border-color: rgb(31 45 41 / 14%); background: rgb(255 254 250 / 42%); }
@@ -1962,6 +1972,7 @@ main > :first-child:not(.workspace):not(.hero-section) { animation: content-sett
   .product-grid { gap: .7rem; }
   .product-card__visual { min-height: 10rem; }
   .sheet-layer { align-items: flex-end; }
+  .sheet-layer--centered { justify-content: flex-end; padding: 0; }
   .sheet {
     width: 100%;
     height: min(92dvh, 52rem);
