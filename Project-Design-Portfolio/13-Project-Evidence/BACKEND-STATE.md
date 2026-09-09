@@ -196,6 +196,7 @@
 - Catalogue reconciliation verification: the public catalogue returns the existing `Suede Jacket` (`SK50`) as in stock with 50 units after activating the approved seller's pre-release draft.
 - Shared account-security release: source `cc6b362`, Render deploy `dep-daggqpmk1f9s73ag73g0`, status `live` on 2026-09-09.
 - Production account verification: fictional customer registration returned 201; profile/mobile update and owned-address creation succeeded; password and email changes returned 204; login with the new email and new password returned 200; database health remained 200.
+- Optional image-description release: source `3462117`, Render deploy `dep-daghghnlk1mc73d34ro0`, status `live` on 2026-09-09. The release compiled on Render's .NET 10 image, `/health/database` returned 200/Healthy, and the post-release error-log scan was empty.
 - Free-tier limitation: cold starts can delay the first request after inactivity, and the database remains temporary development infrastructure.
 
 ## Next ready action

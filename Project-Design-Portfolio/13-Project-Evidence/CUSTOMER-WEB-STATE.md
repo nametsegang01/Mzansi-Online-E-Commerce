@@ -72,11 +72,11 @@
    - The layouts remain responsive and use the existing accessible sheet, focus, error, and announcement patterns.
    - Validation: all 13 frontend interaction tests pass, including administrator access to the complete shared account screen, and the TypeScript/Vite production build succeeds.
 
-10. `FE-010 Responsive and truthful forms` — PASS locally
+10. `FE-010 Responsive and truthful forms` — PASS locally and deployed on Render
    - Customer, reseller, and administrator form controls remain within narrow viewports, stack multi-column fields on mobile, avoid automatic iOS input zoom, and leave safe scrolling space above mobile browser controls and software keyboards.
    - Optional status is explicit in the shared field component instead of being inferred from label text. Every field labelled `(optional)` now omits browser-required validation.
    - Reseller store descriptions, support emails, and product descriptions are now visibly labelled optional. Product image descriptions may be left blank; the API supplies the product name as accessible fallback text when an image URL is present.
-   - Validation: all 13 frontend interaction tests pass and the TypeScript/Vite production build succeeds. The .NET 10 test suite remains covered by its updated API regression test and will be compiled by the Render release because this machine currently exposes only the .NET 8 SDK.
+   - Validation: all 13 frontend interaction tests pass and the TypeScript/Vite production build succeeds. The updated API regression test targets .NET 10; this machine currently exposes only the .NET 8 SDK, while the Render .NET 10 release compiled successfully.
 
 ## Backend dependencies that prevent a truthful “entire system” frontend
 
@@ -104,6 +104,8 @@
 - Synchronization CDN verification: the deployed bundle uses `/api/sync/changes`, retains the `Auto-updating` catalogue status, and the public API watch is live for customer, reseller, and administrator invalidations.
 - Shared account-settings release: source `cc6b362`, Render deploy `dep-daggqpmk1f9s73ag73mg`, status `live` on 2026-09-09.
 - Account-settings CDN verification: the deployed bundle contains the shared account-management, password-change, and email-change flows; the live API verification passed profile, mobile, address, password, email, and new-credential login checks.
+- Responsive-form release: source `3462117`, Render deploy `dep-daghghnlk1mc73d34rug`, status `live` on 2026-09-09.
+- Mobile verification: at 390×844, the seller application sheet exactly matches the 390px viewport without horizontal overflow, remains vertically scrollable, and exposes mobile, registration number, and support email as non-required controls. The deployed CSS includes 16px mobile form controls and safe-area-aware bottom space.
 
 ## Next dependency-ordered work
 
