@@ -97,6 +97,35 @@ describe('integrated marketplace frontend', () => {
     expect(screen.getByRole('dialog', { name: 'Change password' })).toBeInTheDocument()
   })
 
+  it('shows order history in the signed-in customer account', async () => {
+    const user = userEvent.setup()
+    sessionStorage.setItem('mzansi-market-session', JSON.stringify({ accessToken: 'access', refreshToken: 'refresh', expiresIn: 3600, expiresAt: Date.now() + 3600000 }))
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/sync/changes')) return new Promise<Response>(() => undefined)
+      if (url.includes('/api/auth/me')) return json({ userId: 'customer-1', email: 'customer@example.test', displayName: 'Market Customer', accountStatus: 'Active', emailConfirmed: true, roles: ['Customer'], customer: null, seller: null })
+      if (url.includes('/api/account/profile')) return json({ displayName: 'Market Customer', email: 'customer@example.test', mobileNumber: null })
+      if (url.includes('/api/account/addresses')) return json([])
+      if (url.includes('/api/cart')) return json({ cartId: null, items: [], itemCount: 0, subtotal: 0, currency: 'ZAR' })
+      if (url.endsWith('/api/orders')) return json([{
+        orderNumber: 'MM-20260912-ABC123', placedAt: '2026-09-12T10:15:00Z', status: 'Paid', total: 420, currency: 'ZAR',
+        items: [{ name: 'Handwoven Basket', quantity: 1 }],
+        sellerOrders: [{ status: 'ReadyForFulfilment', shipment: null }],
+      }])
+      if (url.includes('/api/categories')) return json([])
+      if (url.includes('/api/products')) return json({ items: [], page: 1, pageSize: 48, totalCount: 0, totalPages: 0 })
+      return json({ title: 'Unexpected request' }, 404)
+    })
+
+    render(<App />)
+    await user.click(await screen.findByRole('button', { name: 'My account' }))
+
+    expect(await screen.findByRole('heading', { name: 'Orders' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Order MM-20260912-ABC123' })).toBeInTheDocument()
+    expect(screen.getByText('Handwoven Basket x 1')).toBeInTheDocument()
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/api/orders'), expect.objectContaining({ headers: expect.any(Headers) }))
+  })
+
   it('lets a signed-in reseller log out from the account menu', async () => {
     const user = userEvent.setup()
     sessionStorage.setItem('mzansi-market-session', JSON.stringify({ accessToken: 'access', refreshToken: 'refresh', expiresIn: 3600, expiresAt: Date.now() + 3600000 }))

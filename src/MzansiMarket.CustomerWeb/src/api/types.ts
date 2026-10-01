@@ -124,6 +124,34 @@ export type Checkout = {
   promotionCode: string | null
 }
 
+export type CustomerOrder = {
+  orderNumber: string
+  placedAt: string
+  status: string
+  total: number
+  currency: string
+  items: CustomerOrderItem[]
+  sellerOrders: CustomerSellerOrder[]
+}
+
+export type CustomerOrderItem = {
+  name: string
+  quantity: number
+}
+
+export type CustomerSellerOrder = {
+  status: string
+  shipment: CustomerShipment | null
+}
+
+export type CustomerShipment = {
+  status: string
+  carrier: string | null
+  trackingNumber: string | null
+  dispatchedAt: string | null
+  deliveredAt: string | null
+}
+
 export type Payment = {
   paymentId: string
   orderId: string
