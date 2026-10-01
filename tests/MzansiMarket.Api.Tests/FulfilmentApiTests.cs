@@ -40,6 +40,7 @@ public sealed class FulfilmentApiTests(ApiFactory factory) : IClassFixture<ApiFa
 
     [Theory]
     [InlineData(AppRoles.Customer)]
+    [InlineData(AppRoles.Seller)]
     [InlineData(AppRoles.ProductAdministrator)]
     [InlineData(AppRoles.BusinessManager)]
     public async Task CustomerAndOtherStaffRoles_CannotAccessFulfilment(string role)
