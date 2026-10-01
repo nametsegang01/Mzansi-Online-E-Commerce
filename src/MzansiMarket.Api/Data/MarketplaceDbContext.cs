@@ -492,8 +492,13 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
             ConfigureEntity(entity);
             entity.ToTable("Promotions", table =>
             {
-                table.HasCheckConstraint("CK_Promotions_Value", "\"Value\" > 0");
+                table.HasCheckConstraint("CK_Promotions_Value",
+                    "\"Value\" >= 0 AND ((\"Type\" = 'Percentage' AND \"Value\" <= 100) OR (\"Type\" = 'FixedAmount' AND \"Value\" > 0))");
                 table.HasCheckConstraint("CK_Promotions_Dates", "\"EndsAt\" > \"StartsAt\"");
+                table.HasCheckConstraint("CK_Promotions_MinimumOrderAmount",
+                    "\"MinimumOrderAmount\" IS NULL OR \"MinimumOrderAmount\" >= 0");
+                table.HasCheckConstraint("CK_Promotions_UsageLimit",
+                    "\"UsageLimit\" IS NULL OR \"UsageLimit\" >= 0");
             });
             entity.Property(x => x.Code).HasMaxLength(60).IsRequired();
             entity.Property(x => x.Name).HasMaxLength(180).IsRequired();

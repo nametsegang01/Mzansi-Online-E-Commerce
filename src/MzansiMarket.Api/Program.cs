@@ -119,6 +119,7 @@ app.MapHealthChecks("/health/database").AllowAnonymous();
 app.MapAuthEndpoints();
 app.MapCatalogueEndpoints();
 app.MapCategoryAdministrationEndpoints();
+app.MapPromotionAdministrationEndpoints();
 app.MapAccountEndpoints();
 app.MapCartEndpoints();
 app.MapCheckoutEndpoints();

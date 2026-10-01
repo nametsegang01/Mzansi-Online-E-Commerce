@@ -1237,7 +1237,11 @@ namespace MzansiMarket.Api.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_Promotions_Dates", "\"EndsAt\" > \"StartsAt\"");
 
-                            t.HasCheckConstraint("CK_Promotions_Value", "\"Value\" > 0");
+                            t.HasCheckConstraint("CK_Promotions_MinimumOrderAmount", "\"MinimumOrderAmount\" IS NULL OR \"MinimumOrderAmount\" >= 0");
+
+                            t.HasCheckConstraint("CK_Promotions_UsageLimit", "\"UsageLimit\" IS NULL OR \"UsageLimit\" >= 0");
+
+                            t.HasCheckConstraint("CK_Promotions_Value", "\"Value\" >= 0 AND ((\"Type\" = 'Percentage' AND \"Value\" <= 100) OR (\"Type\" = 'FixedAmount' AND \"Value\" > 0))");
                         });
                 });
 

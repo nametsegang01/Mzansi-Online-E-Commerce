@@ -25,14 +25,14 @@ public sealed class CheckoutApiTests(ApiFactory factory) : IClassFixture<ApiFact
         var missingKey = await client.PostAsJsonAsync("/api/checkout", new
         {
             addressId,
-            promotionCode = seed.PromotionCode
+            promotionCode = seed.PromotionCode.ToLowerInvariant()
         });
         Assert.Equal(HttpStatusCode.BadRequest, missingKey.StatusCode);
 
         const string checkoutKey = "checkout-idempotency-test-0001";
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/checkout")
         {
-            Content = JsonContent.Create(new { addressId, promotionCode = seed.PromotionCode })
+            Content = JsonContent.Create(new { addressId, promotionCode = seed.PromotionCode.ToLowerInvariant() })
         };
         request.Headers.Add("Idempotency-Key", checkoutKey);
         var placed = await client.SendAsync(request);
@@ -43,6 +43,7 @@ public sealed class CheckoutApiTests(ApiFactory factory) : IClassFixture<ApiFact
         Assert.Equal(140m, body.RootElement.GetProperty("discountTotal").GetDecimal());
         Assert.Equal(75m, body.RootElement.GetProperty("deliveryTotal").GetDecimal());
         Assert.Equal(1335m, body.RootElement.GetProperty("grandTotal").GetDecimal());
+        Assert.Equal(seed.PromotionCode, body.RootElement.GetProperty("promotionCode").GetString());
         Assert.Equal(2, body.RootElement.GetProperty("items").GetArrayLength());
         Assert.False(body.RootElement.TryGetProperty("sellerOrders", out _));
         Assert.Equal("1 Checkout Street",
@@ -50,7 +51,7 @@ public sealed class CheckoutApiTests(ApiFactory factory) : IClassFixture<ApiFact
 
         using var replay = new HttpRequestMessage(HttpMethod.Post, "/api/checkout")
         {
-            Content = JsonContent.Create(new { addressId, promotionCode = seed.PromotionCode })
+            Content = JsonContent.Create(new { addressId, promotionCode = seed.PromotionCode.ToLowerInvariant() })
         };
         replay.Headers.Add("Idempotency-Key", checkoutKey);
         var replayed = await client.SendAsync(replay);
@@ -110,6 +111,40 @@ public sealed class CheckoutApiTests(ApiFactory factory) : IClassFixture<ApiFact
     }
 
     [Fact]
+    public async Task Checkout_RejectsPausedAndExpiredPromotions()
+    {
+        var seed = await SeedCheckoutCatalogueAsync();
+        using var client = factory.CreateApiClient();
+        var token = await RegisterAndLoginAsync(client, "checkout-promotion-status");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var addressId = await CreateAddressAsync(client, "Shipping");
+        await AddAsync(client, seed.FirstProductId, 1);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<MarketplaceDbContext>();
+            var promotion = await dbContext.Promotions.SingleAsync(item => item.Code == seed.PromotionCode);
+            promotion.Status = PromotionStatus.Paused;
+            await dbContext.SaveChangesAsync();
+        }
+
+        await AssertPromotionValidationAsync(
+            await CheckoutAsync(client, addressId, "paused-promotion-key", seed.PromotionCode));
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<MarketplaceDbContext>();
+            var promotion = await dbContext.Promotions.SingleAsync(item => item.Code == seed.PromotionCode);
+            promotion.Status = PromotionStatus.Active;
+            promotion.EndsAt = DateTimeOffset.UtcNow.AddMinutes(-1);
+            await dbContext.SaveChangesAsync();
+        }
+
+        await AssertPromotionValidationAsync(
+            await CheckoutAsync(client, addressId, "expired-promotion-key", seed.PromotionCode));
+    }
+
+    [Fact]
     public async Task Checkout_RequiresCustomerAuthentication()
     {
         using var client = factory.CreateApiClient();
@@ -129,6 +164,13 @@ public sealed class CheckoutApiTests(ApiFactory factory) : IClassFixture<ApiFact
         };
         request.Headers.Add("Idempotency-Key", key);
         return await client.SendAsync(request);
+    }
+
+    private static async Task AssertPromotionValidationAsync(HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(body.RootElement.GetProperty("errors").TryGetProperty("PromotionCode", out _));
     }
 
     private static async Task<Guid> CreateAddressAsync(HttpClient client, string type)

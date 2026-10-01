@@ -10,6 +10,7 @@ public static class AuthorizationPolicies
     public const string CustomerAccess = "CustomerAccess";
     public const string CatalogueManagement = "CatalogueManagement";
     public const string CategoryAdministration = "CategoryAdministration";
+    public const string PromotionAdministration = "PromotionAdministration";
     public const string Fulfilment = "Fulfilment";
     public const string ManagementReports = "ManagementReports";
     public const string UserAdministration = "UserAdministration";
@@ -42,6 +43,10 @@ public static class AuthorizationPolicies
                     [AppRoles.ProductAdministrator, AppRoles.SystemAdministrator],
                     AllowApprovedSeller: true)));
         options.AddPolicy(CategoryAdministration, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new ActiveAccountRequirement())
+            .RequireRole(AppRoles.ProductAdministrator, AppRoles.SystemAdministrator));
+        options.AddPolicy(PromotionAdministration, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(new ActiveAccountRequirement())
             .RequireRole(AppRoles.ProductAdministrator, AppRoles.SystemAdministrator));
