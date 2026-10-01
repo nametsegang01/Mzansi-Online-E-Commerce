@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MzansiMarket.Api.Authorization;
 using MzansiMarket.Api.Data;
 using MzansiMarket.Api.Domain;
 
@@ -12,6 +13,43 @@ namespace MzansiMarket.Api.Tests;
 
 public sealed class FulfilmentApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
+    [Theory]
+    [InlineData(AppRoles.FulfilmentEmployee)]
+    [InlineData(AppRoles.SystemAdministrator)]
+    public async Task StaffRoles_CanSeeAndTransitionOrdersAcrossSellers(string role)
+    {
+        var firstSeller = await RegisterApprovedSellerAsync("staff-fulfilment-first");
+        var secondSeller = await RegisterApprovedSellerAsync("staff-fulfilment-second");
+        var firstOrderId = await SeedReadyOrderAsync(firstSeller.UserId, firstSeller.StoreId, "STAFF-FIRST");
+        var secondOrderId = await SeedReadyOrderAsync(secondSeller.UserId, secondSeller.StoreId, "STAFF-SECOND");
+
+        using var client = await RegisterUserWithRoleAsync(role);
+        var queue = await client.GetFromJsonAsync<JsonElement[]>("/api/fulfilment/orders");
+        Assert.Contains(queue!, order => order.GetProperty("sellerOrderId").GetGuid() == firstOrderId);
+        Assert.Contains(queue!, order => order.GetProperty("sellerOrderId").GetGuid() == secondOrderId);
+
+        foreach (var sellerOrderId in new[] { firstOrderId, secondOrderId })
+        {
+            Assert.Equal(HttpStatusCode.OK, (await TransitionAsync(client, sellerOrderId, "StartPicking")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await TransitionAsync(client, sellerOrderId, "Pack")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK,
+                (await TransitionAsync(client, sellerOrderId, "Dispatch", "Staff Courier", $"TRACK-{sellerOrderId:N}")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await TransitionAsync(client, sellerOrderId, "Deliver")).StatusCode);
+        }
+    }
+
+    [Theory]
+    [InlineData(AppRoles.Customer)]
+    [InlineData(AppRoles.ProductAdministrator)]
+    [InlineData(AppRoles.BusinessManager)]
+    public async Task CustomerAndOtherStaffRoles_CannotAccessFulfilment(string role)
+    {
+        using var client = await RegisterUserWithRoleAsync(role);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/api/fulfilment/orders")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await TransitionAsync(client, Guid.NewGuid(), "StartPicking")).StatusCode);
+    }
+
     [Fact]
     public async Task ApprovedSeller_SeesOwnQueueAndCompletesControlledTransitions()
     {
@@ -115,6 +153,40 @@ public sealed class FulfilmentApiTests(ApiFactory factory) : IClassFixture<ApiFa
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         using var body = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
         return new SellerSetup(userId, storeId, body.RootElement.GetProperty("accessToken").GetString()!);
+    }
+
+    private async Task<HttpClient> RegisterUserWithRoleAsync(string role)
+    {
+        var client = factory.CreateApiClient();
+        var email = $"fulfilment-role-{Guid.NewGuid():N}@example.test";
+        const string password = "LocalOnly!2345";
+        var registration = await client.PostAsJsonAsync("/api/auth/register/customer", new
+        {
+            email,
+            password,
+            firstName = "Test",
+            lastName = "Staff"
+        });
+        Assert.Equal(HttpStatusCode.Created, registration.StatusCode);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await userManager.FindByEmailAsync(email);
+            Assert.NotNull(user);
+            if (role != AppRoles.Customer)
+            {
+                var result = await userManager.AddToRoleAsync(user, role);
+                Assert.True(result.Succeeded);
+            }
+        }
+
+        var login = await client.PostAsJsonAsync("/api/auth/login", new { email, password });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        using var body = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer", body.RootElement.GetProperty("accessToken").GetString());
+        return client;
     }
 
     private async Task<Guid> SeedReadyOrderAsync(Guid sellerId, Guid storeId, string discriminator)

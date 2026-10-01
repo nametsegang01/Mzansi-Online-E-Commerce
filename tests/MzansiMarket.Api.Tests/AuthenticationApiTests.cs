@@ -27,13 +27,14 @@ public sealed class AuthenticationApiTests(ApiFactory factory) : IClassFixture<A
             password,
             firstName = "Naledi",
             lastName = "Dlamini",
-            mobileNumber = "+27 71 000 0000"
+            mobileNumber = "+27 71 000 0000",
+            role = AppRoles.SystemAdministrator
         });
 
         Assert.Equal(HttpStatusCode.Created, registration.StatusCode);
         using var registrationBody = JsonDocument.Parse(await registration.Content.ReadAsStringAsync());
-        Assert.Contains(AppRoles.Customer,
-            registrationBody.RootElement.GetProperty("roles").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal(AppRoles.Customer,
+            Assert.Single(registrationBody.RootElement.GetProperty("roles").EnumerateArray())!.GetString());
 
         var login = await client.PostAsJsonAsync("/api/auth/login", new { email, password });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);

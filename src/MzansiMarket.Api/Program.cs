@@ -124,6 +124,7 @@ app.MapCheckoutEndpoints();
 app.MapPaymentEndpoints();
 app.MapFulfilmentEndpoints();
 app.MapSellerCatalogueEndpoints();
+app.MapStaffAdministrationEndpoints();
 app.MapMarketplaceSyncEndpoints();
 
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
