@@ -121,6 +121,7 @@ app.MapCatalogueEndpoints();
 app.MapAccountEndpoints();
 app.MapCartEndpoints();
 app.MapCheckoutEndpoints();
+app.MapOrdersEndpoints();
 app.MapPaymentEndpoints();
 app.MapFulfilmentEndpoints();
 app.MapSellerCatalogueEndpoints();
