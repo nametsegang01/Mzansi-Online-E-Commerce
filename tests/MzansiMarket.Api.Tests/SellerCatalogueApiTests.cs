@@ -155,6 +155,67 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
         Assert.False(errors.TryGetProperty("ImageAltText", out _));
     }
 
+    [Fact]
+    public async Task InactiveCategories_CannotBeAssignedAndDeactivationPreservesExistingProducts()
+    {
+        var seller = await RegisterSellerAsync("inactive-category");
+        var activeCategoryId = await CreateCategoryAsync();
+        var administrator = await CreateAdministratorAsync();
+        using var adminClient = Client(administrator);
+        var inactiveCategoryResponse = await adminClient.PostAsJsonAsync("/api/admin/categories", new
+        {
+            name = "Inactive category",
+            slug = $"inactive-{Guid.NewGuid():N}",
+            parentCategoryId = (Guid?)null,
+            isActive = false
+        });
+        Assert.Equal(HttpStatusCode.Created, inactiveCategoryResponse.StatusCode);
+        using var inactiveCategoryBody = JsonDocument.Parse(await inactiveCategoryResponse.Content.ReadAsStringAsync());
+        var inactiveCategoryId = inactiveCategoryBody.RootElement.GetProperty("id").GetGuid();
+
+        using var sellerClient = Client(seller.Token);
+        var invalidCreate = await sellerClient.PostAsJsonAsync("/api/seller/products",
+            ProductBody(inactiveCategoryId, $"{seller.Suffix}-inactive-create"));
+        await AssertCategoryValidationAsync(invalidCreate);
+
+        var create = await sellerClient.PostAsJsonAsync("/api/seller/products", ProductBody(activeCategoryId, seller.Suffix));
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        using var createdBody = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
+        var productId = createdBody.RootElement.GetProperty("id").GetGuid();
+
+        var invalidUpdate = await sellerClient.PutAsJsonAsync($"/api/seller/products/{productId}",
+            ProductBody(inactiveCategoryId, seller.Suffix));
+        await AssertCategoryValidationAsync(invalidUpdate);
+
+        var currentCategory = await adminClient.GetFromJsonAsync<JsonElement[]>("/api/admin/categories");
+        var activeCategory = Assert.Single(currentCategory!, category =>
+            category.GetProperty("id").GetGuid() == activeCategoryId);
+        var deactivate = await adminClient.PutAsJsonAsync($"/api/admin/categories/{activeCategoryId}", new
+        {
+            name = activeCategory.GetProperty("name").GetString(),
+            slug = activeCategory.GetProperty("slug").GetString(),
+            parentCategoryId = activeCategory.GetProperty("parentCategoryId").ValueKind == JsonValueKind.Null
+                ? (Guid?)null
+                : activeCategory.GetProperty("parentCategoryId").GetGuid(),
+            isActive = false
+        });
+        Assert.Equal(HttpStatusCode.OK, deactivate.StatusCode);
+
+        var sellerProducts = await sellerClient.GetFromJsonAsync<JsonElement[]>("/api/seller/products");
+        var preserved = Assert.Single(sellerProducts!, product => product.GetProperty("id").GetGuid() == productId);
+        Assert.Equal("Draft", preserved.GetProperty("status").GetString());
+        Assert.Contains(preserved.GetProperty("categories").EnumerateArray(), category =>
+            category.GetProperty("id").GetGuid() == activeCategoryId);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<MarketplaceDbContext>();
+        var storedProduct = await dbContext.Products.SingleAsync(product => product.Id == productId);
+        Assert.False(storedProduct.IsDeleted);
+        Assert.Equal(ProductStatus.Draft, storedProduct.Status);
+        Assert.True(await dbContext.ProductCategories.AnyAsync(link =>
+            link.ProductId == productId && link.CategoryId == activeCategoryId));
+    }
+
     private HttpClient Client(string token)
     {
         var client = factory.CreateApiClient();
@@ -221,6 +282,13 @@ public sealed class SellerCatalogueApiTests(ApiFactory factory) : IClassFixture<
     {
         using var body = JsonDocument.Parse(await (await client.GetAsync($"/api/products?search={suffix}")).Content.ReadAsStringAsync());
         return body.RootElement.GetProperty("totalCount").GetInt32();
+    }
+
+    private static async Task AssertCategoryValidationAsync(HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(body.RootElement.GetProperty("errors").TryGetProperty("CategoryIds", out _));
     }
 
     private sealed record SellerSetup(Guid UserId, string Suffix, string Token);

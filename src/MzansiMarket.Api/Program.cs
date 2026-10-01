@@ -118,6 +118,7 @@ app.MapGet("/", () => Results.Ok(new
 app.MapHealthChecks("/health/database").AllowAnonymous();
 app.MapAuthEndpoints();
 app.MapCatalogueEndpoints();
+app.MapCategoryAdministrationEndpoints();
 app.MapAccountEndpoints();
 app.MapCartEndpoints();
 app.MapCheckoutEndpoints();
