@@ -1,0 +1,12 @@
+ .../Contracts/OrderHistoryContracts.cs             |  23 [32m+++[m
+ src/MzansiMarket.Api/Endpoints/OrdersEndpoints.cs  |  66 [32m+++++++[m
+ src/MzansiMarket.Api/Program.cs                    |   1 [32m+[m
+ src/MzansiMarket.CustomerWeb/src/App.test.tsx      |  29 [32m+++[m
+ src/MzansiMarket.CustomerWeb/src/App.tsx           |   3 [32m+[m[31m-[m
+ src/MzansiMarket.CustomerWeb/src/api/client.ts     |   2 [32m+[m
+ src/MzansiMarket.CustomerWeb/src/api/types.ts      |  28 [32m+++[m
+ .../src/components/CustomerOrders.test.tsx         |  97 [32m++++++++++[m
+ .../src/components/CustomerOrders.tsx              |  90 [32m+++++++++[m
+ src/MzansiMarket.CustomerWeb/src/styles.css        | 147 [32m++++++++++++++[m
+ .../CustomerOrdersApiTests.cs                      | 211 [32m+++++++++++++++++++++[m
+ 11 files changed, 696 insertions(+), 1 deletion(-)

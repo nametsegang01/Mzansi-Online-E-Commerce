@@ -78,13 +78,13 @@
    - Customer, reseller, and administrator form controls remain within narrow viewports, stack multi-column fields on mobile, avoid automatic iOS input zoom, and leave safe scrolling space above mobile browser controls and software keyboards.
    - Optional status is explicit in the shared field component instead of being inferred from label text. Every field labelled `(optional)` now omits browser-required validation.
    - Reseller store descriptions, support emails, and product descriptions are now visibly labelled optional. Product image descriptions may be left blank; the API supplies the product name as accessible fallback text when an image URL is present.
-   - Validation: all 13 frontend interaction tests pass and the TypeScript/Vite production build succeeds. The updated API regression test targets .NET 10; this machine currently exposes only the .NET 8 SDK, while the Render .NET 10 release compiled successfully.
+   - Validation: all 18 frontend interaction tests pass; the TypeScript `--noEmit` check and Vite production build succeed. The API targets .NET 10; the local .NET SDK is 10.0.401 and the API suite passes 36/36 tests.
 
 ## Backend dependencies that prevent a truthful “entire system” frontend
 
-- `BE-007`: cancellations, returns, refunds, customer order history, and refund status endpoints.
+- `BE-007`: cancellations, returns, refunds, and refund status endpoints. Customer order history and shipment status are implemented in the API and customer account.
 - Remaining `BE-008`: staff category/promotion/role administration and direct object-storage image uploads. Reseller approval and its administrator frontend, store editing, owned product/image metadata/price/stock management, and publication are implemented.
-- `BE-009`: customer order tracking history, seller sales/stock/performance reporting, audit access, and export endpoints.
+- `BE-009`: seller sales/stock/performance reporting, audit access, and export endpoints.
 - DATA-005 supplies the base categories. The production catalogue will remain empty until an approved reseller publishes its first product.
 - The sandbox payment initiation endpoint creates a pending provider reference. Only the protected server event endpoint can complete it; the frontend correctly does not receive that secret.
 
