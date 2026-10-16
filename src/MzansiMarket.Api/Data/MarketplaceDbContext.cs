@@ -464,7 +464,7 @@ public sealed class MarketplaceDbContext(DbContextOptions<MarketplaceDbContext> 
             });
             entity.Property(x => x.Reason).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Details).HasMaxLength(2000);
-            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsConcurrencyToken();
             ConfigureMoney(entity.Property(x => x.RefundAmount));
             entity.HasIndex(x => new { x.OrderItemId, x.CustomerId, x.CreatedAt });
             entity.HasOne(x => x.OrderItem).WithMany(x => x.ReturnRequests)
