@@ -120,6 +120,7 @@ app.MapAuthEndpoints();
 app.MapCatalogueEndpoints();
 app.MapCategoryAdministrationEndpoints();
 app.MapPromotionAdministrationEndpoints();
+app.MapRefundAdministrationEndpoints();
 app.MapAccountEndpoints();
 app.MapCartEndpoints();
 app.MapCheckoutEndpoints();
@@ -127,6 +128,7 @@ app.MapPaymentEndpoints();
 app.MapFulfilmentEndpoints();
 app.MapSellerCatalogueEndpoints();
 app.MapStaffAdministrationEndpoints();
+app.MapReportsEndpoints();
 app.MapMarketplaceSyncEndpoints();
 
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))

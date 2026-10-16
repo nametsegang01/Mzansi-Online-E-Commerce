@@ -11,8 +11,10 @@ public static class AuthorizationPolicies
     public const string CatalogueManagement = "CatalogueManagement";
     public const string CategoryAdministration = "CategoryAdministration";
     public const string PromotionAdministration = "PromotionAdministration";
+    public const string RefundAdministration = "RefundAdministration";
     public const string Fulfilment = "Fulfilment";
     public const string ManagementReports = "ManagementReports";
+    public const string ReportsAccess = "ReportsAccess";
     public const string UserAdministration = "UserAdministration";
 
     public static void Configure(AuthorizationOptions options)
@@ -50,6 +52,10 @@ public static class AuthorizationPolicies
             .RequireAuthenticatedUser()
             .AddRequirements(new ActiveAccountRequirement())
             .RequireRole(AppRoles.ProductAdministrator, AppRoles.SystemAdministrator));
+        options.AddPolicy(RefundAdministration, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new ActiveAccountRequirement())
+            .RequireRole(AppRoles.BusinessManager, AppRoles.SystemAdministrator));
         options.AddPolicy(Fulfilment, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(
@@ -58,6 +64,10 @@ public static class AuthorizationPolicies
                     [AppRoles.FulfilmentEmployee, AppRoles.SystemAdministrator],
                     AllowApprovedSeller: true)));
         options.AddPolicy(ManagementReports, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new ActiveAccountRequirement())
+            .RequireRole(AppRoles.BusinessManager, AppRoles.SystemAdministrator));
+        options.AddPolicy(ReportsAccess, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(new ActiveAccountRequirement())
             .RequireRole(AppRoles.BusinessManager, AppRoles.SystemAdministrator));
